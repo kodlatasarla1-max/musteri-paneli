@@ -334,6 +334,40 @@ async def log_activity(user_id: str, user_email: str, action: str, resource_type
 async def root():
     return {"message": "Agency OS API", "status": "running"}
 
+@api_router.post("/init-system")
+async def init_system():
+    """Initialize system with default admin user and services"""
+    existing_admin = await db.users.find_one({"role": "admin"}, {"_id": 0})
+    if existing_admin:
+        return {"message": "System already initialized", "admin_exists": True}
+    
+    admin_dict = {
+        "id": str(uuid.uuid4()),
+        "email": "admin@agency.com",
+        "full_name": "Admin User",
+        "role": "admin",
+        "password": hash_password("admin123"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(admin_dict)
+    
+    services = [
+        {"id": str(uuid.uuid4()), "name": "Video Shoot & Production", "description": "Professional video shooting and production services", "icon": "Video"},
+        {"id": str(uuid.uuid4()), "name": "Meta Ads Management", "description": "Facebook and Instagram advertising management", "icon": "BarChart3"},
+        {"id": str(uuid.uuid4()), "name": "Social Media Management", "description": "Complete social media content and management", "icon": "Share2"},
+        {"id": str(uuid.uuid4()), "name": "Graphic Design", "description": "Professional graphic design services", "icon": "Image"},
+        {"id": str(uuid.uuid4()), "name": "Website Setup", "description": "Professional website development and setup", "icon": "Globe"},
+        {"id": str(uuid.uuid4()), "name": "E-commerce Management", "description": "Complete e-commerce store management", "icon": "ShoppingBag"},
+    ]
+    await db.services.insert_many(services)
+    
+    return {
+        "message": "System initialized successfully",
+        "admin_email": "admin@agency.com",
+        "admin_password": "admin123",
+        "services_created": len(services)
+    }
+
 async def send_email(to_email: str, subject: str, html_content: str):
     if not RESEND_API_KEY:
         logging.warning("Resend API key not configured, skipping email")
