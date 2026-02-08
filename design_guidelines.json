@@ -1,0 +1,122 @@
+{
+  "typograhpy": {
+    "fonts": {
+      "headings": {
+        "family": "Outfit",
+        "weights": ["400", "500", "600"],
+        "letterSpacing": "-0.02em",
+        "cdn": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
+        "usage": "Use for all headings (h1-h6), big stats, and navigation items."
+      },
+      "body": {
+        "family": "Plus Jakarta Sans",
+        "weights": ["400", "500"],
+        "cdn": "",
+        "usage": "Use for all paragraphs, labels, table data, and inputs."
+      }
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-medium tracking-tight",
+      "h2": "text-3xl font-medium tracking-tight",
+      "h3": "text-2xl font-medium",
+      "label": "text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Agency Obsidian",
+        "hex": "#0F172A",
+        "tailwind": "bg-slate-900 text-white",
+        "usage": "Sidebar, Primary Buttons, Active States"
+      },
+      "secondary": {
+        "name": "Studio Stone",
+        "hex": "#F8FAFC",
+        "tailwind": "bg-slate-50",
+        "usage": "Main Page Background (Light Theme)"
+      },
+      "accent": {
+        "name": "Electric Indigo",
+        "hex": "#4F46E5",
+        "tailwind": "text-indigo-600",
+        "usage": "Interactive links, focus rings, progress bars"
+      },
+      "premium": {
+        "name": "Muted Gold",
+        "hex": "#B45309",
+        "tailwind": "text-amber-700 bg-amber-50",
+        "usage": "Premium/VIP badges, high-value alerts"
+      },
+      "locked": {
+        "name": "Restricted Mist",
+        "hex": "#E2E8F0",
+        "tailwind": "bg-slate-200/50 backdrop-blur-sm",
+        "usage": "Locked cards overlay"
+      }
+    },
+    "theme_strategy": "Hybrid",
+    "backgrounds": {
+      "app": "bg-slate-50",
+      "sidebar": "bg-[#0F172A]",
+      "card": "bg-white border-slate-100 shadow-sm"
+    }
+  },
+  "components": {
+    "radius": "rounded-md",
+    "shadows": {
+      "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300",
+      "dropdown": "shadow-xl border border-slate-100"
+    },
+    "buttons": {
+      "primary": "bg-slate-900 text-white hover:bg-slate-800 h-10 px-6 rounded-md font-medium text-sm transition-transform active:scale-95",
+      "secondary": "bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 h-10 px-6 rounded-md font-medium text-sm",
+      "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+    },
+    "inputs": {
+      "default": "bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 h-10 rounded-md"
+    },
+    "locked_state": {
+      "container": "relative overflow-hidden opacity-75 grayscale-[0.5] pointer-events-none select-none",
+      "overlay": "absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-md z-10 pointer-events-auto",
+      "icon": "h-8 w-8 text-slate-400 mb-2",
+      "cta": "bg-white shadow-sm border border-slate-200 text-slate-900 font-medium px-4 py-2 rounded-full text-xs hover:scale-105 transition-transform cursor-pointer"
+    }
+  },
+  "layouts": {
+    "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6 p-8 max-w-[1600px] mx-auto",
+    "sidebar": "fixed left-0 top-0 h-full w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 z-50",
+    "main_content": "ml-64 min-h-screen bg-slate-50",
+    "bento_grid": {
+      "hero": "col-span-1 md:col-span-8 row-span-2",
+      "stat": "col-span-1 md:col-span-4",
+      "list": "col-span-1 md:col-span-4 row-span-2"
+    }
+  },
+  "assets": {
+    "images": {
+      "video_studio": "https://images.unsplash.com/photo-1759417501792-0d188b64b774?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBmaWxtJTIwc3R1ZGlvJTIwY2FtZXJhJTIwcHJvZHVjdGlvbnxlbnwwfHx8fDE3NzA1NzcyOTN8MA&ixlib=rb-4.1.0&q=85",
+      "agency_office": "https://images.unsplash.com/photo-1553792012-5c75e251255e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjcmVhdGl2ZSUyMGFnZW5jeSUyMG1lZXRpbmclMjBtaW5pbWFsfGVufDB8fHx8MTc3MDU3NzI5NHww&ixlib=rb-4.1.0&q=85",
+      "product_lifestyle": "https://images.unsplash.com/photo-1629139033414-76f3c0eacf84?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwyfHxmYXNoaW9uJTIwbGlmZXN0eWxlJTIwcHJvZHVjdCUyMHBob3RvZ3JhcGh5fGVufDB8fHx8MTc3MDU3NzI5NXww&ixlib=rb-4.1.0&q=85",
+      "login_bg": "https://images.unsplash.com/photo-1577190651915-bf62d54d5b36?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBmaWxtJTIwc3R1ZGlvJTIwY2FtZXJhJTIwcHJvZHVjdGlvbnxlbnwwfHx8fDE3NzA1NzcyOTN8MA&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "set": ["LayoutDashboard", "Video", "Image", "BarChart3", "Globe", "ShoppingBag", "Users", "Settings", "Lock", "Unlock", "Bell", "LogOut"]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install fonts: Add the Google Fonts link to public/index.html immediately.",
+    "Sidebar Implementation: Create a persistent Layout component that includes the Sidebar. Do not repeat Sidebar code in every page.",
+    "Locked Services: Render ALL services in the sidebar, but add a 'lock' icon to inactive ones. Clicking them should show the Upsell Modal, not a 403 error.",
+    "Video Module: Use a large video player placeholder (aspect-video) with the 'video_studio' image as poster.",
+    "Admin vs Client: Use the same layout structure but different sidebar items. Admin gets 'Users' and 'Settings'.",
+    "Login Page: Split screen. Left side form, Right side 'agency_office' image with an overlay."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for backgrounds. Use solid colors or subtle patterns.",
+    "Avoid centering text in the dashboard. Use left alignment for readability.",
+    "Use 'sonner' for all notifications.",
+    "Ensure all interactive elements have data-testid attributes."
+  ]
+}
