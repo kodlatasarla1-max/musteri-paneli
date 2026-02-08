@@ -330,6 +330,10 @@ async def log_activity(user_id: str, user_email: str, action: str, resource_type
     log_dict["timestamp"] = log_dict["timestamp"].isoformat()
     await db.activity_logs.insert_one(log_dict)
 
+@api_router.get("/")
+async def root():
+    return {"message": "Agency OS API", "status": "running"}
+
 async def send_email(to_email: str, subject: str, html_content: str):
     if not RESEND_API_KEY:
         logging.warning("Resend API key not configured, skipping email")
