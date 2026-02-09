@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
+import { tr } from '../../utils/translations';
 
 export const AdminClients = () => {
   const [clients, setClients] = useState([]);
