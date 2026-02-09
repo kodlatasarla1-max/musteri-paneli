@@ -69,10 +69,10 @@ export const Layout = ({ role, clientId }) => {
   return (
     <div className="min-h-screen" data-testid="layout-container">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] text-slate-300 flex flex-col border-r border-slate-800 z-50" data-testid="sidebar">
-        <div className="p-6 border-b border-slate-800">
+      <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-blue-900 to-blue-950 text-blue-100 flex flex-col border-r border-blue-800/50 z-50 shadow-xl" data-testid="sidebar">
+        <div className="p-6 border-b border-blue-800/50">
           <h1 className="text-xl font-semibold text-white" data-testid="sidebar-title">{tr.sidebar.agencyOS}</h1>
-          <p className="text-xs text-slate-400 mt-1" data-testid="user-role">{user?.full_name || role}</p>
+          <p className="text-xs text-blue-300 mt-1" data-testid="user-role">{user?.full_name || role}</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
@@ -88,10 +88,10 @@ export const Layout = ({ role, clientId }) => {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-slate-800 text-white shadow-lg'
+                    ? 'bg-blue-800/50 text-white shadow-lg backdrop-blur-sm'
                     : isLocked
-                    ? 'text-slate-500 hover:text-slate-400'
-                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                    ? 'text-blue-400 hover:text-blue-300'
+                    : 'text-blue-200 hover:bg-blue-800/30 hover:text-white'
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -102,12 +102,12 @@ export const Layout = ({ role, clientId }) => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-blue-800/50">
           <Button
             data-testid="logout-button"
             onClick={handleLogout}
             variant="ghost"
-            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
+            className="w-full justify-start text-blue-200 hover:text-white hover:bg-blue-800/30 rounded-lg"
           >
             <LogOut className="h-5 w-5 mr-3" />
             {tr.auth.logout}
