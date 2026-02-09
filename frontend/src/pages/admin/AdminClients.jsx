@@ -47,7 +47,7 @@ export const AdminClients = () => {
       setClients(response.data);
     } catch (error) {
       console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
+      toast.error(tr.admin.clients.failedToLoad);
     } finally {
       setLoading(false);
     }
@@ -58,28 +58,28 @@ export const AdminClients = () => {
     try {
       if (editingClient) {
         await apiClient.put(`/clients/${editingClient.id}`, formData);
-        toast.success('Client updated successfully');
+        toast.success(tr.admin.clients.clientUpdated);
       } else {
         await apiClient.post('/clients', formData);
-        toast.success('Client created successfully');
+        toast.success(tr.admin.clients.clientCreated);
       }
       setShowDialog(false);
       resetForm();
       loadClients();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Operation failed');
+      toast.error(error.response?.data?.detail || tr.admin.clients.operationFailed);
     }
   };
 
   const handleDelete = async (clientId) => {
-    if (!window.confirm('Are you sure you want to delete this client?')) return;
+    if (!window.confirm(tr.admin.clients.deleteConfirm)) return;
     
     try {
       await apiClient.delete(`/clients/${clientId}`);
-      toast.success('Client deleted successfully');
+      toast.success(tr.admin.clients.clientDeleted);
       loadClients();
     } catch (error) {
-      toast.error('Failed to delete client');
+      toast.error(tr.admin.clients.operationFailed);
     }
   };
 
