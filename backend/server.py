@@ -701,6 +701,15 @@ async def create_calendar_event(event_data: CalendarEventCreate, user: dict = De
     event_dict["event_date"] = datetime.fromisoformat(event_dict["event_date"])
     return CalendarEventResponse(**event_dict)
 
+@api_router.delete("/calendar-events/{event_id}")
+async def delete_calendar_event(event_id: str, user: dict = Depends(require_admin_or_staff)):
+    result = await db.calendar_events.delete_one({"id": event_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    
+    await log_activity(user["id"], user["email"], "delete", "calendar_event", event_id, f"Deleted event {event_id}")
+    return {"message": "Event deleted"}
+
 @api_router.get("/receipts/{client_id}", response_model=List[ReceiptResponse])
 async def get_receipts(client_id: str, user: dict = Depends(get_current_user)):
     if user["role"] == "client" and user.get("client_id") != client_id:
