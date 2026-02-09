@@ -14,6 +14,10 @@ import { AdminClients } from "./pages/admin/AdminClients";
 import { AdminStaff } from "./pages/admin/AdminStaff";
 import { AdminContent } from "./pages/admin/AdminContent";
 import { AdminCalendar } from "./pages/admin/AdminCalendar";
+import { AdminAdsReports } from "./pages/admin/AdminAdsReports";
+import { AdminReceipts } from "./pages/admin/AdminReceipts";
+import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
+import { AdminLogs } from "./pages/admin/AdminLogs";
 import { getUser } from "./utils/auth";
 import { tr } from "./utils/translations";
 
@@ -81,10 +85,10 @@ function App() {
             <Route path="staff" element={<AdminStaff />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="calendar" element={<AdminCalendar />} />
-            <Route path="ads-reports" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Reklam Raporları</h1><p className="text-slate-600">Reklam performans raporları yakında eklenecek...</p></div>} />
-            <Route path="receipts" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Makbuz Yönetimi</h1><p className="text-slate-600">Ödeme makbuzu onay sistemi yakında eklenecek...</p></div>} />
-            <Route path="campaigns" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Kampanya Oluşturucu</h1><p className="text-slate-600">Kampanya ve pop-up oluşturma sistemi yakında eklenecek...</p></div>} />
-            <Route path="logs" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Aktivite Logları</h1><p className="text-slate-600">Sistem aktivite logları yakında eklenecek...</p></div>} />
+            <Route path="ads-reports" element={<AdminAdsReports />} />
+            <Route path="receipts" element={<AdminReceipts />} />
+            <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="logs" element={<AdminLogs />} />
           </Route>
 
           {/* Staff Routes */}
