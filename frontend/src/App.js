@@ -7,10 +7,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import { ClientDashboard } from "./pages/client/ClientDashboard";
 import { ClientVideos } from "./pages/client/ClientVideos";
+import { ClientDesigns } from "./pages/client/ClientDesigns";
 import { LockedService } from "./pages/client/LockedService";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
 import { AdminStaff } from "./pages/admin/AdminStaff";
+import { AdminContent } from "./pages/admin/AdminContent";
+import { AdminCalendar } from "./pages/admin/AdminCalendar";
 import { getUser } from "./utils/auth";
 import { tr } from "./utils/translations";
 
@@ -45,6 +48,7 @@ function App() {
           >
             <Route path="dashboard" element={<ClientDashboard />} />
             <Route path="videos" element={<ClientVideos />} />
+            <Route path="designs" element={<ClientDesigns />} />
             <Route
               path="social-media"
               element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}
@@ -52,10 +56,6 @@ function App() {
             <Route
               path="ads"
               element={<LockedService serviceName={tr.services.metaAds} description={tr.services.metaAdsDesc} />}
-            />
-            <Route
-              path="designs"
-              element={<LockedService serviceName={tr.services.graphicDesign} description={tr.services.graphicDesignDesc} />}
             />
             <Route
               path="website"
@@ -79,8 +79,8 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="clients" element={<AdminClients />} />
             <Route path="staff" element={<AdminStaff />} />
-            <Route path="content" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">İçerik Yönetimi</h1><p className="text-slate-600">Video ve tasarım yükleme sistemi yakında eklenecek...</p></div>} />
-            <Route path="calendar" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Takvim</h1><p className="text-slate-600">Etkinlik ve çekim takvimi yakında eklenecek...</p></div>} />
+            <Route path="content" element={<AdminContent />} />
+            <Route path="calendar" element={<AdminCalendar />} />
             <Route path="ads-reports" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Reklam Raporları</h1><p className="text-slate-600">Reklam performans raporları yakında eklenecek...</p></div>} />
             <Route path="receipts" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Makbuz Yönetimi</h1><p className="text-slate-600">Ödeme makbuzu onay sistemi yakında eklenecek...</p></div>} />
             <Route path="campaigns" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Kampanya Oluşturucu</h1><p className="text-slate-600">Kampanya ve pop-up oluşturma sistemi yakında eklenecek...</p></div>} />
@@ -98,8 +98,8 @@ function App() {
           >
             <Route path="dashboard" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Personel Paneli</h1><p className="text-slate-600">Personel gösterge paneli yakında eklenecek...</p></div>} />
             <Route path="clients" element={<AdminClients />} />
-            <Route path="content" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">İçerik Yönetimi</h1><p className="text-slate-600">İçerik yükleme sistemi yakında eklenecek...</p></div>} />
-            <Route path="calendar" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Takvim</h1><p className="text-slate-600">Takvim sistemi yakında eklenecek...</p></div>} />
+            <Route path="content" element={<AdminContent />} />
+            <Route path="calendar" element={<AdminCalendar />} />
           </Route>
         </Routes>
       </BrowserRouter>
