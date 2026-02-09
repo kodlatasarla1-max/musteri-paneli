@@ -117,30 +117,33 @@ export const AdminClients = () => {
   return (
     <div className="p-8 max-w-[1600px] mx-auto" data-testid="admin-clients-page">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-medium text-slate-900" data-testid="clients-title">Clients</h1>
-        <Button onClick={() => setShowDialog(true)} data-testid="add-client-button">
+        <div>
+          <h1 className="text-4xl font-medium text-slate-900" data-testid="clients-title">{tr.admin.clients.title}</h1>
+          <p className="text-slate-600 mt-2">Müşteri profillerini ve hizmet erişimlerini yönetin</p>
+        </div>
+        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="add-client-button">
           <Plus className="h-4 w-4 mr-2" />
-          Add Client
+          {tr.admin.clients.addClient}
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-blue-100 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Company Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Industry</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Access Days</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-blue-50">
+              <TableHead>{tr.admin.clients.companyName}</TableHead>
+              <TableHead>{tr.admin.clients.contactName}</TableHead>
+              <TableHead>{tr.admin.clients.industry}</TableHead>
+              <TableHead>{tr.admin.clients.status}</TableHead>
+              <TableHead>{tr.admin.clients.accessDays}</TableHead>
+              <TableHead className="text-right">{tr.common.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-slate-600">
-                  No clients yet. Add your first client to get started.
+                  {tr.admin.clients.noClients}
                 </TableCell>
               </TableRow>
             ) : (
@@ -160,16 +163,17 @@ export const AdminClients = () => {
                       client.status === 'expired' ? 'bg-red-100 text-red-800' :
                       'bg-slate-100 text-slate-800'
                     }`}>
-                      {client.status}
+                      {tr.status[client.status] || client.status}
                     </span>
                   </TableCell>
-                  <TableCell>{client.access_days_remaining} days</TableCell>
+                  <TableCell>{client.access_days_remaining} gün</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openEditDialog(client)}
+                        className="border-blue-200 text-blue-600 hover:bg-blue-50"
                         data-testid={`edit-client-${client.id}`}
                       >
                         <Edit className="h-4 w-4" />
@@ -178,6 +182,7 @@ export const AdminClients = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDelete(client.id)}
+                        className="border-red-200 text-red-600 hover:bg-red-50"
                         data-testid={`delete-client-${client.id}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -197,68 +202,73 @@ export const AdminClients = () => {
       }}>
         <DialogContent data-testid="client-dialog">
           <DialogHeader>
-            <DialogTitle>{editingClient ? 'Edit Client' : 'Add New Client'}</DialogTitle>
+            <DialogTitle>{editingClient ? tr.admin.clients.editClient : tr.admin.clients.addClient}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="company_name">Company Name</Label>
+                <Label htmlFor="company_name">{tr.admin.clients.companyName}</Label>
                 <Input
                   id="company_name"
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                   required
+                  className="border-blue-200"
                   data-testid="company-name-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_name">Contact Name</Label>
+                <Label htmlFor="contact_name">{tr.admin.clients.contactName}</Label>
                 <Input
                   id="contact_name"
                   value={formData.contact_name}
                   onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
                   required
+                  className="border-blue-200"
                   data-testid="contact-name-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_email">Contact Email</Label>
+                <Label htmlFor="contact_email">{tr.admin.clients.contactEmail}</Label>
                 <Input
                   id="contact_email"
                   type="email"
                   value={formData.contact_email}
                   onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                   required
+                  className="border-blue-200"
                   data-testid="contact-email-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact_phone">Contact Phone</Label>
+                <Label htmlFor="contact_phone">{tr.admin.clients.contactPhone}</Label>
                 <Input
                   id="contact_phone"
                   value={formData.contact_phone}
                   onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                   required
+                  className="border-blue-200"
                   data-testid="contact-phone-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
+                <Label htmlFor="industry">{tr.admin.clients.industry}</Label>
                 <Input
                   id="industry"
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                   required
+                  className="border-blue-200"
                   data-testid="industry-input"
                 />
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
-                Cancel
+                {tr.common.cancel}
               </Button>
-              <Button type="submit" data-testid="submit-client-button">
-                {editingClient ? 'Update' : 'Create'}
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-client-button">
+                {editingClient ? tr.common.update : tr.common.create}
               </Button>
             </DialogFooter>
           </form>
