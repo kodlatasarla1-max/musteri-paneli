@@ -4,6 +4,7 @@ import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
 import apiClient from '../utils/api';
+import { tr } from '../utils/translations';
 
 export const Layout = ({ role, clientId }) => {
   const navigate = useNavigate();
@@ -31,32 +32,32 @@ export const Layout = ({ role, clientId }) => {
   };
 
   const adminNav = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: Users, label: 'Clients', path: '/admin/clients' },
-    { icon: Users, label: 'Staff', path: '/admin/staff' },
-    { icon: Video, label: 'Content', path: '/admin/content' },
-    { icon: Calendar, label: 'Calendar', path: '/admin/calendar' },
-    { icon: BarChart3, label: 'Ads Reports', path: '/admin/ads-reports' },
-    { icon: Receipt, label: 'Receipts', path: '/admin/receipts' },
-    { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
-    { icon: Activity, label: 'Activity Logs', path: '/admin/logs' },
+    { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/admin/dashboard' },
+    { icon: Users, label: tr.sidebar.clients, path: '/admin/clients' },
+    { icon: Users, label: tr.sidebar.staff, path: '/admin/staff' },
+    { icon: Video, label: tr.sidebar.content, path: '/admin/content' },
+    { icon: Calendar, label: tr.sidebar.calendar, path: '/admin/calendar' },
+    { icon: BarChart3, label: tr.sidebar.adsReports, path: '/admin/ads-reports' },
+    { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts' },
+    { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
+    { icon: Activity, label: tr.sidebar.activityLogs, path: '/admin/logs' },
   ];
 
   const clientNav = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/client/dashboard', active: true },
-    { icon: Video, label: 'Video Production', path: '/client/videos', active: isServiceActive('Video Shoot & Production') },
-    { icon: Share2, label: 'Social Media', path: '/client/social-media', active: isServiceActive('Social Media Management') },
-    { icon: BarChart3, label: 'Meta Ads', path: '/client/ads', active: isServiceActive('Meta Ads Management') },
-    { icon: Image, label: 'Graphic Design', path: '/client/designs', active: isServiceActive('Graphic Design') },
-    { icon: Globe, label: 'Website Setup', path: '/client/website', active: isServiceActive('Website Setup') },
-    { icon: ShoppingBag, label: 'E-commerce', path: '/client/ecommerce', active: isServiceActive('E-commerce Management') },
+    { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/client/dashboard', active: true },
+    { icon: Video, label: tr.sidebar.videoProduction, path: '/client/videos', active: isServiceActive('Video Shoot & Production') },
+    { icon: Share2, label: tr.sidebar.socialMedia, path: '/client/social-media', active: isServiceActive('Social Media Management') },
+    { icon: BarChart3, label: tr.sidebar.metaAds, path: '/client/ads', active: isServiceActive('Meta Ads Management') },
+    { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('Graphic Design') },
+    { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Website Setup') },
+    { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-commerce Management') },
   ];
 
   const staffNav = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/staff/dashboard' },
-    { icon: Users, label: 'Clients', path: '/staff/clients' },
-    { icon: Video, label: 'Content', path: '/staff/content' },
-    { icon: Calendar, label: 'Calendar', path: '/staff/calendar' },
+    { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/staff/dashboard' },
+    { icon: Users, label: tr.sidebar.clients, path: '/staff/clients' },
+    { icon: Video, label: tr.sidebar.content, path: '/staff/content' },
+    { icon: Calendar, label: tr.sidebar.calendar, path: '/staff/calendar' },
   ];
 
   const navItems = role === 'admin' ? adminNav : role === 'staff' ? staffNav : clientNav;
@@ -70,7 +71,7 @@ export const Layout = ({ role, clientId }) => {
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] text-slate-300 flex flex-col border-r border-slate-800 z-50" data-testid="sidebar">
         <div className="p-6 border-b border-slate-800">
-          <h1 className="text-xl font-semibold text-white" data-testid="sidebar-title">Agency OS</h1>
+          <h1 className="text-xl font-semibold text-white" data-testid="sidebar-title">{tr.sidebar.agencyOS}</h1>
           <p className="text-xs text-slate-400 mt-1" data-testid="user-role">{user?.full_name || role}</p>
         </div>
 
@@ -85,9 +86,9 @@ export const Layout = ({ role, clientId }) => {
                 key={item.path}
                 data-testid={`nav-item-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-slate-800 text-white'
+                    ? 'bg-slate-800 text-white shadow-lg'
                     : isLocked
                     ? 'text-slate-500 hover:text-slate-400'
                     : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
@@ -106,10 +107,10 @@ export const Layout = ({ role, clientId }) => {
             data-testid="logout-button"
             onClick={handleLogout}
             variant="ghost"
-            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
+            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
           >
             <LogOut className="h-5 w-5 mr-3" />
-            Logout
+            {tr.auth.logout}
           </Button>
         </div>
       </div>
