@@ -10,7 +10,9 @@ import { ClientVideos } from "./pages/client/ClientVideos";
 import { LockedService } from "./pages/client/LockedService";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
+import { AdminStaff } from "./pages/admin/AdminStaff";
 import { getUser } from "./utils/auth";
+import { tr } from "./utils/translations";
 
 function App() {
   const user = getUser();
@@ -45,23 +47,23 @@ function App() {
             <Route path="videos" element={<ClientVideos />} />
             <Route
               path="social-media"
-              element={<LockedService serviceName="Social Media Management" description="Manage your social media content calendar and posts" />}
+              element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}
             />
             <Route
               path="ads"
-              element={<LockedService serviceName="Meta Ads Management" description="Track and optimize your Facebook and Instagram ad campaigns" />}
+              element={<LockedService serviceName={tr.services.metaAds} description={tr.services.metaAdsDesc} />}
             />
             <Route
               path="designs"
-              element={<LockedService serviceName="Graphic Design" description="Access your design files and request revisions" />}
+              element={<LockedService serviceName={tr.services.graphicDesign} description={tr.services.graphicDesignDesc} />}
             />
             <Route
               path="website"
-              element={<LockedService serviceName="Website Setup" description="Professional website development and setup services" />}
+              element={<LockedService serviceName={tr.services.websiteSetup} description={tr.services.websiteSetupDesc} />}
             />
             <Route
               path="ecommerce"
-              element={<LockedService serviceName="E-commerce Management" description="Complete e-commerce store management and optimization" />}
+              element={<LockedService serviceName={tr.services.ecommerce} description={tr.services.ecommerceDesc} />}
             />
           </Route>
 
@@ -76,13 +78,13 @@ function App() {
           >
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="clients" element={<AdminClients />} />
-            <Route path="staff" element={<div className="p-8">Staff Management - Coming Soon</div>} />
-            <Route path="content" element={<div className="p-8">Content Management - Coming Soon</div>} />
-            <Route path="calendar" element={<div className="p-8">Calendar - Coming Soon</div>} />
-            <Route path="ads-reports" element={<div className="p-8">Ads Reports - Coming Soon</div>} />
-            <Route path="receipts" element={<div className="p-8">Receipt Management - Coming Soon</div>} />
-            <Route path="campaigns" element={<div className="p-8">Campaign Generator - Coming Soon</div>} />
-            <Route path="logs" element={<div className="p-8">Activity Logs - Coming Soon</div>} />
+            <Route path="staff" element={<AdminStaff />} />
+            <Route path="content" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">İçerik Yönetimi</h1><p className="text-slate-600">Video ve tasarım yükleme sistemi yakında eklenecek...</p></div>} />
+            <Route path="calendar" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Takvim</h1><p className="text-slate-600">Etkinlik ve çekim takvimi yakında eklenecek...</p></div>} />
+            <Route path="ads-reports" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Reklam Raporları</h1><p className="text-slate-600">Reklam performans raporları yakında eklenecek...</p></div>} />
+            <Route path="receipts" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Makbuz Yönetimi</h1><p className="text-slate-600">Ödeme makbuzu onay sistemi yakında eklenecek...</p></div>} />
+            <Route path="campaigns" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Kampanya Oluşturucu</h1><p className="text-slate-600">Kampanya ve pop-up oluşturma sistemi yakında eklenecek...</p></div>} />
+            <Route path="logs" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Aktivite Logları</h1><p className="text-slate-600">Sistem aktivite logları yakında eklenecek...</p></div>} />
           </Route>
 
           {/* Staff Routes */}
@@ -94,10 +96,10 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="dashboard" element={<div className="p-8">Staff Dashboard - Coming Soon</div>} />
+            <Route path="dashboard" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Personel Paneli</h1><p className="text-slate-600">Personel gösterge paneli yakında eklenecek...</p></div>} />
             <Route path="clients" element={<AdminClients />} />
-            <Route path="content" element={<div className="p-8">Content Management - Coming Soon</div>} />
-            <Route path="calendar" element={<div className="p-8">Calendar - Coming Soon</div>} />
+            <Route path="content" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">İçerik Yönetimi</h1><p className="text-slate-600">İçerik yükleme sistemi yakında eklenecek...</p></div>} />
+            <Route path="calendar" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Takvim</h1><p className="text-slate-600">Takvim sistemi yakında eklenecek...</p></div>} />
           </Route>
         </Routes>
       </BrowserRouter>
