@@ -52,6 +52,11 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* Force card background to white - override any yellow */
+.bg-card {
+    background-color: rgb(255, 255, 255) !important;
+}
+
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;
