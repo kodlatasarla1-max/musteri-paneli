@@ -6,6 +6,7 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { setToken, setUser } from '../utils/auth';
+import { tr } from '../utils/translations';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,7 +32,7 @@ export const Login = () => {
       });
       setUser(userResponse.data);
 
-      toast.success('Login successful!');
+      toast.success(tr.auth.loginSuccessful);
 
       if (role === 'admin') {
         navigate('/admin/dashboard');
@@ -41,7 +42,7 @@ export const Login = () => {
         navigate('/client/dashboard');
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Login failed');
+      toast.error(error.response?.data?.detail || tr.auth.loginFailed);
     } finally {
       setLoading(false);
     }
@@ -50,16 +51,16 @@ export const Login = () => {
   return (
     <div className="min-h-screen grid md:grid-cols-2" data-testid="login-page">
       {/* Left Side - Form */}
-      <div className="flex flex-col items-center justify-center p-8 md:p-12">
+      <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <h1 className="text-4xl font-semibold text-slate-900" data-testid="login-title">Welcome back</h1>
-            <p className="mt-2 text-slate-600">Sign in to your Agency OS account</p>
+            <h1 className="text-5xl font-medium text-slate-900 tracking-tight" data-testid="login-title">{tr.auth.welcomeBack}</h1>
+            <p className="mt-3 text-slate-600">{tr.auth.signInToAccount}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email" className="text-sm font-medium">{tr.auth.emailAddress}</Label>
               <Input
                 id="email"
                 data-testid="email-input"
@@ -67,13 +68,13 @@ export const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11"
-                placeholder="you@company.com"
+                className="h-12 border-slate-200 focus:border-slate-900 focus:ring-slate-900"
+                placeholder="ornek@sirket.com"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">{tr.auth.password}</Label>
               <Input
                 id="password"
                 data-testid="password-input"
@@ -81,7 +82,7 @@ export const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11"
+                className="h-12 border-slate-200 focus:border-slate-900 focus:ring-slate-900"
                 placeholder="••••••••"
               />
             </div>
@@ -89,10 +90,10 @@ export const Login = () => {
             <Button
               type="submit"
               data-testid="login-submit-button"
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800"
+              className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? tr.auth.signingIn : tr.auth.signIn}
             </Button>
           </form>
         </div>
@@ -103,11 +104,11 @@ export const Login = () => {
         className="hidden md:block bg-cover bg-center relative"
         style={{ backgroundImage: `url('https://images.unsplash.com/photo-1553792012-5c75e251255e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjcmVhdGl2ZSUyMGFnZW5jeSUyMG1lZXRpbmclMjBtaW5pbWFsfGVufDB8fHx8MTc3MDU3NzI5NHww&ixlib=rb-4.1.0&q=85')` }}
       >
-        <div className="absolute inset-0 bg-slate-900/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 to-slate-900/40" />
         <div className="absolute inset-0 flex items-end p-12">
           <div className="text-white max-w-lg">
-            <h2 className="text-3xl font-medium mb-4">Manage your agency with confidence</h2>
-            <p className="text-slate-200">Complete control over clients, projects, and services in one powerful platform.</p>
+            <h2 className="text-4xl font-medium mb-4 tracking-tight">{tr.auth.manageAgency}</h2>
+            <p className="text-slate-100 text-lg">{tr.auth.completeControl}</p>
           </div>
         </div>
       </div>
