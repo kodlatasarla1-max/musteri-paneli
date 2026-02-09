@@ -52,8 +52,12 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* Force card background to white - override any yellow */
+/* Force card and table backgrounds to white */
 .bg-card {
+    background-color: rgb(255, 255, 255) !important;
+}
+
+tbody {
     background-color: rgb(255, 255, 255) !important;
 }
 
