@@ -132,7 +132,7 @@ export const AdminReceipts = () => {
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="mb-6 bg-blue-50">
+        <TabsList className="mb-6 bg-slate-100 border border-slate-200">
           <TabsTrigger value="pending" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
             Bekleyen ({pendingReceipts.length})
           </TabsTrigger>
