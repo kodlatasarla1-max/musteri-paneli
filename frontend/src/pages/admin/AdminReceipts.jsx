@@ -245,7 +245,7 @@ export const AdminReceipts = () => {
           <div className="space-y-4 py-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-slate-900 mb-2">Müşteri: {selectedReceipt?.client_name}</p>
-              <p className="text-sm text-slate-600">Tutar: ${selectedReceipt?.amount.toFixed(2)}</p>
+              <p className="text-sm text-slate-600">Tutar: ₺{selectedReceipt?.amount.toFixed(2)}</p>
             </div>
 
             {selectedReceipt?.action === 'approve' && (
