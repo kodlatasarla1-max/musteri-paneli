@@ -105,25 +105,25 @@ export const AdminLogs = () => {
           <p className="text-sm text-slate-600 mt-1">Oluşturma</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-amber-100 rounded-xl">
-              <Activity className="h-6 w-6 text-amber-600" />
+            <div className="p-3 bg-indigo-100 rounded-xl">
+              <Activity className="h-6 w-6 text-indigo-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-amber-900">
+          <p className="text-3xl font-semibold text-indigo-900">
             {logs.filter(l => l.action === 'update' || l.action === 'update_status').length}
           </p>
           <p className="text-sm text-slate-600 mt-1">Güncelleme</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-red-100">
+        <Card className="p-6 bg-gradient-to-br from-rose-50 to-white border-rose-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-red-100 rounded-xl">
-              <Activity className="h-6 w-6 text-red-600" />
+            <div className="p-3 bg-rose-100 rounded-xl">
+              <Activity className="h-6 w-6 text-rose-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-red-900">
+          <p className="text-3xl font-semibold text-rose-900">
             {logs.filter(l => l.action === 'delete').length}
           </p>
           <p className="text-sm text-slate-600 mt-1">Silme</p>
