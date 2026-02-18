@@ -36,8 +36,9 @@ export const AdminReceipts = () => {
 
   const loadData = async () => {
     try {
-      const allReceipts = await loadAllReceipts();
-      setReceipts(allReceipts);
+      // Use the new endpoint that returns all receipts with client names
+      const response = await apiClient.get('/receipts');
+      setReceipts(response.data);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Veriler yüklenemedi');
@@ -46,24 +47,11 @@ export const AdminReceipts = () => {
     }
   };
 
-  const loadAllReceipts = async () => {
-    try {
-      const clientsRes = await apiClient.get('/clients');
-      const allReceipts = [];
-      for (const client of clientsRes.data) {
-        const receiptsRes = await apiClient.get(`/receipts/${client.id}`);
-        allReceipts.push(...receiptsRes.data.map(r => ({ ...r, client_name: client.company_name, client })));
-      }
-      return allReceipts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    } catch (error) {
-      return [];
-    }
-  };
-
   const handleApprove = async (receiptId, approve) => {
     try {
-      await apiClient.put(`/receipts/${receiptId}/approve`, null, {
-        params: { approve, admin_notes: adminNotes }
+      await apiClient.put(`/receipts/${receiptId}/approve`, { 
+        approve, 
+        admin_note: adminNotes 
       });
       
       toast.success(approve ? 'Makbuz onaylandı ve erişim aktifleştirildi' : 'Makbuz reddedildi');
