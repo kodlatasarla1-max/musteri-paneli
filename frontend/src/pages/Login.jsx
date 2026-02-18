@@ -4,7 +4,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { setToken, setUser } from '../utils/auth';
 import { tr } from '../utils/translations';
 
@@ -22,15 +21,24 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API}/auth/login`, { email, password });
-      const { access_token, role, client_id } = response.data;
+      const response = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || tr.auth.loginFailed);
+      }
+
+      const data = await response.json();
+      const { access_token, role, client_id, user } = data;
 
       setToken(access_token);
-      
-      const userResponse = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${access_token}` }
-      });
-      setUser(userResponse.data);
+      setUser(user);
 
       toast.success(tr.auth.loginSuccessful);
 
@@ -42,7 +50,7 @@ export const Login = () => {
         navigate('/client/dashboard');
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || tr.auth.loginFailed);
+      toast.error(error.message || tr.auth.loginFailed);
     } finally {
       setLoading(false);
     }
@@ -96,6 +104,13 @@ export const Login = () => {
               {loading ? tr.auth.signingIn : tr.auth.signIn}
             </Button>
           </form>
+
+          {/* Demo credentials hint */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-sm text-blue-800 font-medium mb-2">Demo Giriş Bilgileri:</p>
+            <p className="text-xs text-blue-700">E-posta: admin@agency.com</p>
+            <p className="text-xs text-blue-700">Şifre: admin123</p>
+          </div>
         </div>
       </div>
 
