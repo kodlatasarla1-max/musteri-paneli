@@ -52,8 +52,8 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* Force card and table backgrounds to white */
-.bg-card {
+/* Force card and table backgrounds to white (only when no explicit bg is set) */
+.bg-card:not([class*="bg-gradient"]):not([class*="from-"]) {
     background-color: rgb(255, 255, 255) !important;
 }
 
