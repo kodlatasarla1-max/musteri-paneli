@@ -100,35 +100,35 @@ export const AdminReceipts = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-white border-orange-100">
+        <div className="p-6 rounded-xl border shadow" style={{ background: 'linear-gradient(to bottom right, #fff7ed, #ffffff)', borderColor: '#fed7aa' }}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Clock className="h-6 w-6 text-orange-600" />
+            <div className="p-3 rounded-xl" style={{ backgroundColor: '#ffedd5' }}>
+              <Clock className="h-6 w-6" style={{ color: '#ea580c' }} />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-orange-900">{pendingReceipts.length}</p>
+          <p className="text-3xl font-semibold" style={{ color: '#7c2d12' }}>{pendingReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Bekleyen Makbuz</p>
-        </Card>
+        </div>
 
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+        <div className="p-6 rounded-xl border shadow" style={{ background: 'linear-gradient(to bottom right, #ecfdf5, #ffffff)', borderColor: '#a7f3d0' }}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-emerald-100 rounded-xl">
-              <CheckCircle className="h-6 w-6 text-emerald-600" />
+            <div className="p-3 rounded-xl" style={{ backgroundColor: '#d1fae5' }}>
+              <CheckCircle className="h-6 w-6" style={{ color: '#059669' }} />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-emerald-900">{approvedReceipts.length}</p>
+          <p className="text-3xl font-semibold" style={{ color: '#064e3b' }}>{approvedReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Onaylanan</p>
-        </Card>
+        </div>
 
-        <Card className="p-6 bg-gradient-to-br from-rose-50 to-white border-rose-100">
+        <div className="p-6 rounded-xl border shadow" style={{ background: 'linear-gradient(to bottom right, #fff1f2, #ffffff)', borderColor: '#fecdd3' }}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-rose-100 rounded-xl">
-              <XCircle className="h-6 w-6 text-rose-600" />
+            <div className="p-3 rounded-xl" style={{ backgroundColor: '#ffe4e6' }}>
+              <XCircle className="h-6 w-6" style={{ color: '#e11d48' }} />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-rose-900">{rejectedReceipts.length}</p>
+          <p className="text-3xl font-semibold" style={{ color: '#881337' }}>{rejectedReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Reddedilen</p>
-        </Card>
+        </div>
       </div>
 
       <Tabs defaultValue="pending" className="w-full">
