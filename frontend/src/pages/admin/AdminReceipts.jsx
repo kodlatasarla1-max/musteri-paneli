@@ -185,7 +185,7 @@ export const AdminReceipts = () => {
                     list.map((receipt) => (
                       <TableRow key={receipt.id} data-testid={`receipt-row-${receipt.id}`}>
                         <TableCell className="font-medium">{receipt.client_name}</TableCell>
-                        <TableCell className="font-semibold text-blue-600">${receipt.amount.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold text-blue-600">₺{receipt.amount.toFixed(2)}</TableCell>
                         <TableCell>{new Date(receipt.payment_date).toLocaleDateString('tr-TR')}</TableCell>
                         <TableCell>{new Date(receipt.created_at).toLocaleDateString('tr-TR')}</TableCell>
                         <TableCell>{getStatusBadge(receipt.status)}</TableCell>
