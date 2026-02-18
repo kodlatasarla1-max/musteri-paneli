@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, Settings, LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock } from 'lucide-react';
+import { LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell } from 'lucide-react';
 import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
@@ -10,12 +10,26 @@ export const Layout = ({ role, clientId }) => {
   const navigate = useNavigate();
   const user = getUser();
   const [clientServices, setClientServices] = useState([]);
+  const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     if (role === 'client' && clientId) {
       loadClientServices();
+      loadUnreadNotifications();
+    }
+    if (role === 'admin' || role === 'staff') {
+      loadPendingReceiptsCount();
     }
   }, [role, clientId]);
+
+  // Refresh pending count every 30 seconds for admin
+  useEffect(() => {
+    if (role === 'admin' || role === 'staff') {
+      const interval = setInterval(loadPendingReceiptsCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [role]);
 
   const loadClientServices = async () => {
     try {
@@ -23,6 +37,24 @@ export const Layout = ({ role, clientId }) => {
       setClientServices(response.data);
     } catch (error) {
       console.error('Error loading client services:', error);
+    }
+  };
+
+  const loadPendingReceiptsCount = async () => {
+    try {
+      const response = await apiClient.get('/receipts/pending/count');
+      setPendingReceiptsCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Error loading pending receipts count:', error);
+    }
+  };
+
+  const loadUnreadNotifications = async () => {
+    try {
+      const response = await apiClient.get('/notifications/unread-count');
+      setUnreadNotifications(response.data.count || 0);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
     }
   };
 
@@ -38,19 +70,19 @@ export const Layout = ({ role, clientId }) => {
     { icon: Video, label: tr.sidebar.content, path: '/admin/content' },
     { icon: Calendar, label: tr.sidebar.calendar, path: '/admin/calendar' },
     { icon: BarChart3, label: tr.sidebar.adsReports, path: '/admin/ads-reports' },
-    { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts' },
+    { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts', badge: pendingReceiptsCount },
     { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
     { icon: Activity, label: tr.sidebar.activityLogs, path: '/admin/logs' },
   ];
 
   const clientNav = [
     { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/client/dashboard', active: true },
-    { icon: Video, label: tr.sidebar.videoProduction, path: '/client/videos', active: isServiceActive('Video Shoot & Production') },
-    { icon: Share2, label: tr.sidebar.socialMedia, path: '/client/social-media', active: isServiceActive('Social Media Management') },
-    { icon: BarChart3, label: tr.sidebar.metaAds, path: '/client/ads', active: isServiceActive('Meta Ads Management') },
-    { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('Graphic Design') },
-    { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Website Setup') },
-    { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-commerce Management') },
+    { icon: Video, label: tr.sidebar.videoProduction, path: '/client/videos', active: isServiceActive('Video Çekimi & Prodüksiyon') },
+    { icon: Share2, label: tr.sidebar.socialMedia, path: '/client/social-media', active: isServiceActive('Sosyal Medya Yönetimi') },
+    { icon: BarChart3, label: tr.sidebar.metaAds, path: '/client/ads', active: isServiceActive('Meta Reklamları Yönetimi') },
+    { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('Grafik Tasarım') },
+    { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Web Sitesi Kurulumu') },
+    { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-ticaret Yönetimi') },
   ];
 
   const staffNav = [
@@ -96,6 +128,11 @@ export const Layout = ({ role, clientId }) => {
               >
                 <Icon className="h-5 w-5" />
                 <span className="flex-1 text-left">{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                    {item.badge}
+                  </span>
+                )}
                 {isLocked && <Lock className="h-4 w-4" />}
               </button>
             );
