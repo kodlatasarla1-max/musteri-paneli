@@ -20,11 +20,13 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-app = FastAPI(title="Agency OS API", version="2.0.0")
+app = FastAPI(title="Agency OS API", version="2.1.0")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
-# Pydantic Models
+# =====================================================
+# PYDANTIC MODELS
+# =====================================================
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -123,8 +125,26 @@ class CampaignCreate(BaseModel):
     cta_link: Optional[str] = None
     is_active: bool = True
 
+class ClientFinanceCreate(BaseModel):
+    transaction_type: str
+    amount: float
+    transaction_date: str
+    category: str
+    description: Optional[str] = None
+    receipt_url: Optional[str] = None
 
-# Helper function to verify JWT and get user
+class ClientFinanceUpdate(BaseModel):
+    transaction_type: Optional[str] = None
+    amount: Optional[float] = None
+    transaction_date: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    receipt_url: Optional[str] = None
+
+
+# =====================================================
+# AUTH HELPERS
+# =====================================================
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     try:
@@ -132,7 +152,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if not user_response.user:
             raise HTTPException(status_code=401, detail="Invalid token")
         
-        # Get profile with role
         profile = supabase.table('profiles').select('*').eq('id', user_response.user.id).single().execute()
         if not profile.data:
             raise HTTPException(status_code=401, detail="User profile not found")
@@ -155,7 +174,15 @@ async def require_admin_or_staff(user: dict = Depends(get_current_user)):
     return user
 
 
-# Helper to log audit
+async def require_client(user: dict = Depends(get_current_user)):
+    if user.get('role') != 'client':
+        raise HTTPException(status_code=403, detail="Client access required")
+    return user
+
+
+# =====================================================
+# AUDIT & NOTIFICATION HELPERS
+# =====================================================
 def log_audit(actor_id: str, actor_email: str, action: str, entity: str, entity_id: str = None, client_id: str = None, before: dict = None, after: dict = None):
     try:
         supabase.table('audit_logs').insert({
@@ -172,7 +199,6 @@ def log_audit(actor_id: str, actor_email: str, action: str, entity: str, entity_
         logging.error(f"Audit log error: {e}")
 
 
-# Helper to create notification
 def create_notification(user_id: str, type: str, title: str, message: str, link: str = None):
     try:
         supabase.table('notifications').insert({
@@ -186,12 +212,130 @@ def create_notification(user_id: str, type: str, title: str, message: str, link:
         logging.error(f"Notification error: {e}")
 
 
+def notify_client_users(client_id: str, type: str, title: str, message: str, link: str = None):
+    """Send notification to all users belonging to a client"""
+    try:
+        client_users = supabase.table('profiles').select('id').eq('client_id', client_id).execute()
+        for cu in client_users.data:
+            create_notification(cu['id'], type, title, message, link)
+    except Exception as e:
+        logging.error(f"Notify client users error: {e}")
+
+
+def notify_admins(type: str, title: str, message: str, link: str = None):
+    """Send notification to all admins"""
+    try:
+        admins = supabase.table('profiles').select('id').eq('role', 'admin').execute()
+        for admin in admins.data:
+            create_notification(admin['id'], type, title, message, link)
+    except Exception as e:
+        logging.error(f"Notify admins error: {e}")
+
+
+# =====================================================
+# ACCESS PERIOD HELPERS
+# =====================================================
+def get_client_access_info(client_id: str):
+    """Get current access status for a client"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Check for active access
+        access = supabase.table('client_access').select('*').eq('client_id', client_id).eq('status', 'active').gte('active_until', now.isoformat()).order('active_until', desc=True).limit(1).execute()
+        
+        if access.data and len(access.data) > 0:
+            active_access = access.data[0]
+            active_until = datetime.fromisoformat(active_access['active_until'].replace('Z', '+00:00'))
+            days_remaining = (active_until - now).days
+            return {
+                'has_access': True,
+                'access_id': active_access['id'],
+                'active_from': active_access['active_from'],
+                'active_until': active_access['active_until'],
+                'days_remaining': max(0, days_remaining),
+                'status': 'active'
+            }
+        
+        # Check for pending receipts
+        pending = supabase.table('receipts').select('id', count='exact').eq('client_id', client_id).eq('status', 'pending').execute()
+        has_pending = (pending.count or 0) > 0
+        
+        return {
+            'has_access': False,
+            'access_id': None,
+            'active_from': None,
+            'active_until': None,
+            'days_remaining': 0,
+            'status': 'pending' if has_pending else 'expired',
+            'has_pending_receipt': has_pending
+        }
+    except Exception as e:
+        logging.error(f"Get client access info error: {e}")
+        return {'has_access': False, 'days_remaining': 0, 'status': 'error'}
+
+
+def create_or_extend_access(client_id: str, receipt_id: str, activated_by: str, days: int = 30):
+    """Create new access period or extend existing one"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Check for existing active access
+        existing = supabase.table('client_access').select('*').eq('client_id', client_id).eq('status', 'active').gte('active_until', now.isoformat()).order('active_until', desc=True).limit(1).execute()
+        
+        if existing.data and len(existing.data) > 0:
+            # Extend existing access
+            current_until = datetime.fromisoformat(existing.data[0]['active_until'].replace('Z', '+00:00'))
+            new_until = current_until + timedelta(days=days)
+            
+            supabase.table('client_access').update({
+                'active_until': new_until.isoformat(),
+                'notes': f'Extended by {days} days on {now.strftime("%Y-%m-%d")}'
+            }).eq('id', existing.data[0]['id']).execute()
+            
+            access_id = existing.data[0]['id']
+            active_until = new_until
+        else:
+            # Create new access period
+            new_until = now + timedelta(days=days)
+            
+            result = supabase.table('client_access').insert({
+                'client_id': client_id,
+                'receipt_id': receipt_id,
+                'active_from': now.isoformat(),
+                'active_until': new_until.isoformat(),
+                'status': 'active',
+                'activated_by': activated_by
+            }).execute()
+            
+            access_id = result.data[0]['id']
+            active_until = new_until
+        
+        # Update client record
+        days_remaining = (active_until - now).days
+        supabase.table('clients').update({
+            'status': 'active',
+            'current_access_id': access_id,
+            'access_days_remaining': days_remaining,
+            'access_expires_at': active_until.isoformat(),
+            'has_pending_receipt': False
+        }).eq('id', client_id).execute()
+        
+        return {
+            'access_id': access_id,
+            'active_until': active_until.isoformat(),
+            'days_remaining': days_remaining
+        }
+    except Exception as e:
+        logging.error(f"Create/extend access error: {e}")
+        raise
+
+
 # =====================================================
 # ROOT
 # =====================================================
 @api_router.get("/")
 async def root():
-    return {"message": "Agency OS API v2.0", "status": "running", "database": "Supabase"}
+    return {"message": "Agency OS API v2.1", "status": "running", "database": "Supabase"}
 
 
 # =====================================================
@@ -208,11 +352,15 @@ async def login(request: LoginRequest):
         if not response.user:
             raise HTTPException(status_code=401, detail="Geçersiz kimlik bilgileri")
         
-        # Get user profile
         profile = supabase.table('profiles').select('*').eq('id', response.user.id).single().execute()
         
         if not profile.data:
             raise HTTPException(status_code=401, detail="Kullanıcı profili bulunamadı")
+        
+        # Get access info for clients
+        access_info = None
+        if profile.data.get('role') == 'client' and profile.data.get('client_id'):
+            access_info = get_client_access_info(profile.data['client_id'])
         
         return {
             "access_token": response.session.access_token,
@@ -220,6 +368,7 @@ async def login(request: LoginRequest):
             "token_type": "bearer",
             "role": profile.data.get('role'),
             "client_id": profile.data.get('client_id'),
+            "access_info": access_info,
             "user": {
                 "id": profile.data.get('id'),
                 "email": profile.data.get('email'),
@@ -237,7 +386,6 @@ async def login(request: LoginRequest):
 @api_router.post("/auth/register")
 async def register(request: RegisterRequest, admin_user: dict = Depends(require_admin)):
     try:
-        # Create auth user
         auth_response = supabase.auth.admin.create_user({
             "email": request.email,
             "password": request.password,
@@ -247,7 +395,6 @@ async def register(request: RegisterRequest, admin_user: dict = Depends(require_
         if not auth_response.user:
             raise HTTPException(status_code=400, detail="Kullanıcı oluşturulamadı")
         
-        # Create profile
         profile_data = {
             "id": auth_response.user.id,
             "email": request.email,
@@ -268,6 +415,10 @@ async def register(request: RegisterRequest, admin_user: dict = Depends(require_
 
 @api_router.get("/auth/me")
 async def get_me(user: dict = Depends(get_current_user)):
+    access_info = None
+    if user.get('role') == 'client' and user.get('client_id'):
+        access_info = get_client_access_info(user['client_id'])
+    
     return {
         "id": user.get('id'),
         "email": user.get('email'),
@@ -275,24 +426,22 @@ async def get_me(user: dict = Depends(get_current_user)):
         "role": user.get('role'),
         "client_id": user.get('client_id'),
         "avatar_url": user.get('avatar_url'),
-        "created_at": user.get('created_at')
+        "created_at": user.get('created_at'),
+        "access_info": access_info
     }
 
 
 # =====================================================
-# INIT SYSTEM - Create first admin user
+# INIT SYSTEM
 # =====================================================
 @api_router.post("/init-system")
 async def init_system():
-    """Initialize system with default admin user"""
     try:
-        # Check if any admin exists
         existing = supabase.table('profiles').select('id').eq('role', 'admin').limit(1).execute()
         
         if existing.data and len(existing.data) > 0:
             return {"message": "Sistem zaten başlatılmış", "admin_exists": True}
         
-        # Create admin user
         auth_response = supabase.auth.admin.create_user({
             "email": "admin@agency.com",
             "password": "admin123",
@@ -302,7 +451,6 @@ async def init_system():
         if not auth_response.user:
             raise HTTPException(status_code=500, detail="Admin kullanıcısı oluşturulamadı")
         
-        # Create admin profile
         supabase.table('profiles').insert({
             "id": auth_response.user.id,
             "email": "admin@agency.com",
@@ -327,7 +475,16 @@ async def init_system():
 async def get_clients(user: dict = Depends(require_admin_or_staff)):
     try:
         response = supabase.table('clients').select('*').order('created_at', desc=True).execute()
-        return response.data
+        
+        # Add access info for each client
+        result = []
+        for client in response.data:
+            client_data = dict(client)
+            access_info = get_client_access_info(client['id'])
+            client_data['access_info'] = access_info
+            result.append(client_data)
+        
+        return result
     except Exception as e:
         logging.error(f"Get clients error: {e}")
         raise HTTPException(status_code=500, detail="Müşteriler yüklenemedi")
@@ -336,7 +493,6 @@ async def get_clients(user: dict = Depends(require_admin_or_staff)):
 @api_router.get("/clients/{client_id}")
 async def get_client(client_id: str, user: dict = Depends(get_current_user)):
     try:
-        # Check if client user can only access their own client
         if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
             raise HTTPException(status_code=403, detail="Erişim reddedildi")
         
@@ -345,7 +501,10 @@ async def get_client(client_id: str, user: dict = Depends(get_current_user)):
         if not response.data:
             raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
         
-        return response.data
+        client_data = dict(response.data)
+        client_data['access_info'] = get_client_access_info(client_id)
+        
+        return client_data
     except HTTPException:
         raise
     except Exception as e:
@@ -359,6 +518,7 @@ async def create_client(client: ClientCreate, user: dict = Depends(require_admin
         client_data = client.model_dump()
         client_data['status'] = 'pending'
         client_data['access_days_remaining'] = 0
+        client_data['has_pending_receipt'] = False
         
         response = supabase.table('clients').insert(client_data).execute()
         
@@ -373,7 +533,6 @@ async def create_client(client: ClientCreate, user: dict = Depends(require_admin
 @api_router.put("/clients/{client_id}")
 async def update_client(client_id: str, client: ClientUpdate, user: dict = Depends(require_admin)):
     try:
-        # Get existing client for audit
         existing = supabase.table('clients').select('*').eq('id', client_id).single().execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
@@ -383,6 +542,9 @@ async def update_client(client_id: str, client: ClientUpdate, user: dict = Depen
         response = supabase.table('clients').update(update_data).eq('id', client_id).execute()
         
         log_audit(user['id'], user['email'], 'update', 'client', client_id, client_id, existing.data, update_data)
+        
+        # Notify client
+        notify_client_users(client_id, 'client_updated', 'Profil Güncellendi', 'Müşteri profiliniz güncellendi.', '/client/dashboard')
         
         return response.data[0]
     except HTTPException:
@@ -412,6 +574,38 @@ async def delete_client(client_id: str, user: dict = Depends(require_admin)):
 
 
 # =====================================================
+# CLIENT ACCESS
+# =====================================================
+@api_router.get("/client-access/{client_id}")
+async def get_client_access(client_id: str, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        return get_client_access_info(client_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get client access error: {e}")
+        raise HTTPException(status_code=500, detail="Erişim bilgisi yüklenemedi")
+
+
+@api_router.get("/client-access/{client_id}/history")
+async def get_client_access_history(client_id: str, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        response = supabase.table('client_access').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
+        return response.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get access history error: {e}")
+        raise HTTPException(status_code=500, detail="Erişim geçmişi yüklenemedi")
+
+
+# =====================================================
 # SERVICES
 # =====================================================
 @api_router.get("/services")
@@ -430,16 +624,11 @@ async def get_client_services(client_id: str, user: dict = Depends(get_current_u
         if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
             raise HTTPException(status_code=403, detail="Erişim reddedildi")
         
-        # Get all services first
         services = supabase.table('services').select('*').execute()
-        
-        # Get client services
         client_services = supabase.table('client_services').select('*').eq('client_id', client_id).execute()
         
-        # Map client services by service_id
         cs_map = {str(cs['service_id']): cs for cs in client_services.data}
         
-        # Build response with service names
         result = []
         for service in services.data:
             cs = cs_map.get(str(service['id']), {})
@@ -464,15 +653,12 @@ async def get_client_services(client_id: str, user: dict = Depends(get_current_u
 @api_router.post("/client-services")
 async def toggle_client_service(data: ServiceToggle, user: dict = Depends(require_admin)):
     try:
-        # Check if exists
         existing = supabase.table('client_services').select('*').eq('client_id', data.client_id).eq('service_id', data.service_id).execute()
         
         if existing.data and len(existing.data) > 0:
-            # Update
             supabase.table('client_services').update({'is_enabled': data.is_enabled}).eq('id', existing.data[0]['id']).execute()
             action = "etkinleştirildi" if data.is_enabled else "devre dışı bırakıldı"
         else:
-            # Insert
             supabase.table('client_services').insert({
                 'client_id': data.client_id,
                 'service_id': data.service_id,
@@ -480,11 +666,13 @@ async def toggle_client_service(data: ServiceToggle, user: dict = Depends(requir
             }).execute()
             action = "eklendi"
         
-        # Get service name
         service = supabase.table('services').select('name').eq('id', data.service_id).single().execute()
         service_name = service.data.get('name', 'Hizmet') if service.data else 'Hizmet'
         
         log_audit(user['id'], user['email'], 'toggle_service', 'client_service', data.service_id, data.client_id, None, {'is_enabled': data.is_enabled})
+        
+        # Notify client
+        notify_client_users(data.client_id, 'service_toggle', 'Hizmet Güncellendi', f'{service_name} hizmeti {action}.', '/client/dashboard')
         
         return {"message": f"Hizmet {action}: {service_name}"}
     except Exception as e:
@@ -497,11 +685,9 @@ async def toggle_client_service(data: ServiceToggle, user: dict = Depends(requir
 # =====================================================
 @api_router.get("/receipts")
 async def get_all_receipts(user: dict = Depends(require_admin_or_staff)):
-    """Get all receipts with client info"""
     try:
         response = supabase.table('receipts').select('*, clients(company_name)').order('created_at', desc=True).execute()
         
-        # Flatten client name
         result = []
         for receipt in response.data:
             receipt_data = {k: v for k, v in receipt.items() if k != 'clients'}
@@ -514,14 +700,48 @@ async def get_all_receipts(user: dict = Depends(require_admin_or_staff)):
         raise HTTPException(status_code=500, detail="Makbuzlar yüklenemedi")
 
 
-@api_router.get("/receipts/{client_id}")
-async def get_client_receipts(client_id: str, user: dict = Depends(get_current_user)):
+@api_router.get("/receipts/client/{client_id}")
+async def get_client_receipts(client_id: str, year: Optional[int] = None, month: Optional[int] = None, status: Optional[str] = None, user: dict = Depends(get_current_user)):
     try:
         if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
             raise HTTPException(status_code=403, detail="Erişim reddedildi")
         
-        response = supabase.table('receipts').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
-        return response.data
+        query = supabase.table('receipts').select('*').eq('client_id', client_id)
+        
+        if status:
+            query = query.eq('status', status)
+        
+        response = query.order('created_at', desc=True).execute()
+        
+        # Group by month
+        grouped = {}
+        for receipt in response.data:
+            created = datetime.fromisoformat(receipt['created_at'].replace('Z', '+00:00'))
+            
+            # Filter by year/month if provided
+            if year and created.year != year:
+                continue
+            if month and created.month != month:
+                continue
+            
+            month_key = created.strftime('%Y-%m')
+            month_label = created.strftime('%B %Y')
+            
+            if month_key not in grouped:
+                grouped[month_key] = {
+                    'month_key': month_key,
+                    'month_label': month_label,
+                    'receipts': []
+                }
+            grouped[month_key]['receipts'].append(receipt)
+        
+        # Sort by month descending
+        result = sorted(grouped.values(), key=lambda x: x['month_key'], reverse=True)
+        
+        return {
+            'grouped': result,
+            'all': response.data
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -531,7 +751,6 @@ async def get_client_receipts(client_id: str, user: dict = Depends(get_current_u
 
 @api_router.get("/receipts/pending/count")
 async def get_pending_receipts_count(user: dict = Depends(require_admin_or_staff)):
-    """Get count of pending receipts for badge"""
     try:
         response = supabase.table('receipts').select('id', count='exact').eq('status', 'pending').execute()
         return {"count": response.count or 0}
@@ -549,18 +768,18 @@ async def create_receipt(receipt: ReceiptCreate, user: dict = Depends(get_curren
         
         response = supabase.table('receipts').insert(receipt_data).execute()
         
+        # Update client has_pending_receipt
+        supabase.table('clients').update({'has_pending_receipt': True}).eq('id', receipt.client_id).execute()
+        
         log_audit(user['id'], user['email'], 'create', 'receipt', response.data[0]['id'], receipt.client_id, None, receipt_data)
         
-        # Notify admin(s)
-        admins = supabase.table('profiles').select('id').eq('role', 'admin').execute()
-        for admin in admins.data:
-            create_notification(
-                admin['id'],
-                'receipt_pending',
-                'Yeni Makbuz',
-                f'₺{receipt.amount:.2f} tutarında yeni bir makbuz yüklendi ve onay bekliyor.',
-                '/admin/receipts'
-            )
+        # Notify admins
+        notify_admins(
+            'receipt_pending',
+            'Yeni Makbuz',
+            f'₺{receipt.amount:,.2f} tutarında yeni bir makbuz yüklendi ve onay bekliyor.',
+            '/admin/receipts'
+        )
         
         return response.data[0]
     except Exception as e:
@@ -571,39 +790,47 @@ async def create_receipt(receipt: ReceiptCreate, user: dict = Depends(get_curren
 @api_router.put("/receipts/{receipt_id}/approve")
 async def approve_receipt(receipt_id: str, approval: ReceiptApproval, user: dict = Depends(require_admin)):
     try:
-        # Get receipt
         receipt = supabase.table('receipts').select('*').eq('id', receipt_id).single().execute()
         if not receipt.data:
             raise HTTPException(status_code=404, detail="Makbuz bulunamadı")
         
         new_status = 'approved' if approval.approve else 'rejected'
+        now = datetime.now(timezone.utc)
         
         # Update receipt
         update_data = {
             'status': new_status,
             'admin_note': approval.admin_note,
             'approved_by': user['id'],
-            'approved_at': datetime.now(timezone.utc).isoformat()
+            'approved_at': now.isoformat()
         }
         
         supabase.table('receipts').update(update_data).eq('id', receipt_id).execute()
         
-        # If approved, activate client access for 30 days
+        client_id = receipt.data['client_id']
+        amount = receipt.data['amount']
+        
         if approval.approve:
-            new_expiry = datetime.now(timezone.utc) + timedelta(days=30)
+            # Create/extend access period - THIS IS THE KEY LOGIC
+            access_result = create_or_extend_access(
+                client_id=client_id,
+                receipt_id=receipt_id,
+                activated_by=user['id'],
+                days=30
+            )
             
+            # Update total_paid
+            client = supabase.table('clients').select('total_paid').eq('id', client_id).single().execute()
+            current_paid = client.data.get('total_paid', 0) or 0
             supabase.table('clients').update({
-                'status': 'active',
-                'access_days_remaining': 30,
-                'access_expires_at': new_expiry.isoformat(),
-                'total_paid': supabase.table('clients').select('total_paid').eq('id', receipt.data['client_id']).single().execute().data.get('total_paid', 0) + receipt.data['amount']
-            }).eq('id', receipt.data['client_id']).execute()
+                'total_paid': current_paid + amount
+            }).eq('id', client_id).execute()
             
-            # Create finance transaction
+            # Create finance transaction (agency income)
             supabase.table('finance_transactions').insert({
                 'transaction_type': 'income',
-                'client_id': receipt.data['client_id'],
-                'amount': receipt.data['amount'],
+                'client_id': client_id,
+                'amount': amount,
                 'currency': 'TRY',
                 'transaction_date': receipt.data['payment_date'],
                 'category': 'Hizmet Ödemesi',
@@ -612,25 +839,304 @@ async def approve_receipt(receipt_id: str, approval: ReceiptApproval, user: dict
                 'created_by': user['id']
             }).execute()
             
-            # Notify client user(s)
-            client_users = supabase.table('profiles').select('id').eq('client_id', receipt.data['client_id']).execute()
-            for cu in client_users.data:
-                create_notification(
-                    cu['id'],
-                    'receipt_approved',
-                    'Makbuz Onaylandı',
-                    f'₺{receipt.data["amount"]:.2f} tutarındaki makbuzunuz onaylandı. 30 günlük erişiminiz aktifleştirildi.',
-                    '/client/dashboard'
-                )
-        
-        log_audit(user['id'], user['email'], f'receipt_{new_status}', 'receipt', receipt_id, receipt.data['client_id'], receipt.data, update_data)
-        
-        return {"message": f"Makbuz {'onaylandı ve erişim aktifleştirildi' if approval.approve else 'reddedildi'}"}
+            # Notify client
+            notify_client_users(
+                client_id,
+                'receipt_approved',
+                'Makbuz Onaylandı',
+                f'₺{amount:,.2f} tutarındaki makbuzunuz onaylandı. 30 günlük erişiminiz aktifleştirildi. Bitiş tarihi: {access_result["active_until"][:10]}',
+                '/client/dashboard'
+            )
+            
+            log_audit(user['id'], user['email'], 'receipt_approved', 'receipt', receipt_id, client_id, receipt.data, {
+                'status': new_status,
+                'access_until': access_result['active_until'],
+                'days_granted': 30
+            })
+            
+            return {
+                "message": "Makbuz onaylandı ve 30 günlük erişim aktifleştirildi",
+                "access_until": access_result['active_until'],
+                "days_remaining": access_result['days_remaining']
+            }
+        else:
+            # Rejected - check if there are other pending receipts
+            pending_count = supabase.table('receipts').select('id', count='exact').eq('client_id', client_id).eq('status', 'pending').execute()
+            has_pending = (pending_count.count or 0) > 0
+            
+            supabase.table('clients').update({'has_pending_receipt': has_pending}).eq('id', client_id).execute()
+            
+            # Notify client
+            notify_client_users(
+                client_id,
+                'receipt_rejected',
+                'Makbuz Reddedildi',
+                f'₺{amount:,.2f} tutarındaki makbuzunuz reddedildi. {approval.admin_note or ""}',
+                '/client/receipts'
+            )
+            
+            log_audit(user['id'], user['email'], 'receipt_rejected', 'receipt', receipt_id, client_id, receipt.data, {
+                'status': new_status,
+                'admin_note': approval.admin_note
+            })
+            
+            return {"message": "Makbuz reddedildi"}
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"Approve receipt error: {e}")
         raise HTTPException(status_code=500, detail="Makbuz işlenemedi")
+
+
+@api_router.delete("/receipts/{receipt_id}")
+async def delete_receipt(receipt_id: str, user: dict = Depends(get_current_user)):
+    try:
+        receipt = supabase.table('receipts').select('*').eq('id', receipt_id).single().execute()
+        if not receipt.data:
+            raise HTTPException(status_code=404, detail="Makbuz bulunamadı")
+        
+        # Only allow deletion of pending receipts by the uploader or admin
+        if user.get('role') != 'admin' and receipt.data.get('uploaded_by') != user['id']:
+            raise HTTPException(status_code=403, detail="Bu makbuzu silme yetkiniz yok")
+        
+        if receipt.data.get('status') != 'pending':
+            raise HTTPException(status_code=400, detail="Sadece bekleyen makbuzlar silinebilir")
+        
+        client_id = receipt.data['client_id']
+        
+        supabase.table('receipts').delete().eq('id', receipt_id).execute()
+        
+        # Update has_pending_receipt
+        pending_count = supabase.table('receipts').select('id', count='exact').eq('client_id', client_id).eq('status', 'pending').execute()
+        has_pending = (pending_count.count or 0) > 0
+        supabase.table('clients').update({'has_pending_receipt': has_pending}).eq('id', client_id).execute()
+        
+        log_audit(user['id'], user['email'], 'delete', 'receipt', receipt_id, client_id, receipt.data, None)
+        
+        return {"message": "Makbuz silindi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Delete receipt error: {e}")
+        raise HTTPException(status_code=500, detail="Makbuz silinemedi")
+
+
+# =====================================================
+# CLIENT FINANCE (Müşteri Muhasebesi)
+# =====================================================
+@api_router.get("/client-finance/categories")
+async def get_finance_categories():
+    try:
+        response = supabase.table('finance_categories').select('*').eq('is_active', True).order('sort_order').execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"Get finance categories error: {e}")
+        raise HTTPException(status_code=500, detail="Kategoriler yüklenemedi")
+
+
+@api_router.get("/client-finance/{client_id}")
+async def get_client_finance(client_id: str, year: Optional[int] = None, month: Optional[int] = None, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        query = supabase.table('client_finance_transactions').select('*').eq('client_id', client_id)
+        
+        response = query.order('transaction_date', desc=True).execute()
+        
+        # Filter by year/month if provided
+        transactions = response.data
+        if year or month:
+            filtered = []
+            for t in transactions:
+                t_date = datetime.fromisoformat(t['transaction_date'])
+                if year and t_date.year != year:
+                    continue
+                if month and t_date.month != month:
+                    continue
+                filtered.append(t)
+            transactions = filtered
+        
+        # Calculate summary
+        total_income = sum(float(t['amount']) for t in transactions if t['transaction_type'] == 'income')
+        total_expense = sum(float(t['amount']) for t in transactions if t['transaction_type'] == 'expense')
+        net_profit = total_income - total_expense
+        
+        # Group by category for expenses
+        expense_by_category = {}
+        for t in transactions:
+            if t['transaction_type'] == 'expense':
+                cat = t['category']
+                expense_by_category[cat] = expense_by_category.get(cat, 0) + float(t['amount'])
+        
+        return {
+            'transactions': transactions,
+            'summary': {
+                'total_income': total_income,
+                'total_expense': total_expense,
+                'net_profit': net_profit,
+                'expense_by_category': expense_by_category
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get client finance error: {e}")
+        raise HTTPException(status_code=500, detail="Finans verileri yüklenemedi")
+
+
+@api_router.get("/client-finance/{client_id}/monthly-summary")
+async def get_client_monthly_summary(client_id: str, months: int = 12, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        response = supabase.table('client_finance_transactions').select('*').eq('client_id', client_id).order('transaction_date', desc=True).execute()
+        
+        # Group by month
+        monthly = {}
+        for t in response.data:
+            t_date = datetime.fromisoformat(t['transaction_date'])
+            month_key = t_date.strftime('%Y-%m')
+            
+            if month_key not in monthly:
+                monthly[month_key] = {
+                    'month': month_key,
+                    'month_label': t_date.strftime('%B %Y'),
+                    'income': 0,
+                    'expense': 0,
+                    'net_profit': 0
+                }
+            
+            if t['transaction_type'] == 'income':
+                monthly[month_key]['income'] += float(t['amount'])
+            else:
+                monthly[month_key]['expense'] += float(t['amount'])
+        
+        # Calculate net profit for each month
+        for m in monthly.values():
+            m['net_profit'] = m['income'] - m['expense']
+        
+        # Sort and limit
+        result = sorted(monthly.values(), key=lambda x: x['month'], reverse=True)[:months]
+        result.reverse()  # Oldest first for charts
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get monthly summary error: {e}")
+        raise HTTPException(status_code=500, detail="Aylık özet yüklenemedi")
+
+
+@api_router.post("/client-finance/{client_id}")
+async def create_client_finance(client_id: str, data: ClientFinanceCreate, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        finance_data = data.model_dump()
+        finance_data['client_id'] = client_id
+        finance_data['created_by'] = user['id']
+        finance_data['currency'] = 'TRY'
+        
+        response = supabase.table('client_finance_transactions').insert(finance_data).execute()
+        
+        log_audit(user['id'], user['email'], 'create', 'client_finance', response.data[0]['id'], client_id, None, finance_data)
+        
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create client finance error: {e}")
+        raise HTTPException(status_code=500, detail="Finans kaydı oluşturulamadı")
+
+
+@api_router.put("/client-finance/{client_id}/{transaction_id}")
+async def update_client_finance(client_id: str, transaction_id: str, data: ClientFinanceUpdate, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        existing = supabase.table('client_finance_transactions').select('*').eq('id', transaction_id).eq('client_id', client_id).single().execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
+        
+        update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+        
+        response = supabase.table('client_finance_transactions').update(update_data).eq('id', transaction_id).execute()
+        
+        log_audit(user['id'], user['email'], 'update', 'client_finance', transaction_id, client_id, existing.data, update_data)
+        
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Update client finance error: {e}")
+        raise HTTPException(status_code=500, detail="Finans kaydı güncellenemedi")
+
+
+@api_router.delete("/client-finance/{client_id}/{transaction_id}")
+async def delete_client_finance(client_id: str, transaction_id: str, user: dict = Depends(get_current_user)):
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        existing = supabase.table('client_finance_transactions').select('*').eq('id', transaction_id).eq('client_id', client_id).single().execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
+        
+        supabase.table('client_finance_transactions').delete().eq('id', transaction_id).execute()
+        
+        log_audit(user['id'], user['email'], 'delete', 'client_finance', transaction_id, client_id, existing.data, None)
+        
+        return {"message": "Finans kaydı silindi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Delete client finance error: {e}")
+        raise HTTPException(status_code=500, detail="Finans kaydı silinemedi")
+
+
+@api_router.get("/client-finance/{client_id}/export")
+async def export_client_finance(client_id: str, year: Optional[int] = None, month: Optional[int] = None, user: dict = Depends(get_current_user)):
+    """Export client finance data as CSV-compatible JSON"""
+    try:
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        response = supabase.table('client_finance_transactions').select('*').eq('client_id', client_id).order('transaction_date', desc=True).execute()
+        
+        transactions = response.data
+        if year or month:
+            filtered = []
+            for t in transactions:
+                t_date = datetime.fromisoformat(t['transaction_date'])
+                if year and t_date.year != year:
+                    continue
+                if month and t_date.month != month:
+                    continue
+                filtered.append(t)
+            transactions = filtered
+        
+        # Format for CSV export
+        export_data = []
+        for t in transactions:
+            export_data.append({
+                'Tarih': t['transaction_date'],
+                'Tür': 'Gelir' if t['transaction_type'] == 'income' else 'Gider',
+                'Kategori': t['category'],
+                'Açıklama': t.get('description', ''),
+                'Tutar': t['amount'],
+                'Para Birimi': t.get('currency', 'TRY')
+            })
+        
+        return {'data': export_data, 'count': len(export_data)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Export client finance error: {e}")
+        raise HTTPException(status_code=500, detail="Dışa aktarma başarısız")
 
 
 # =====================================================
@@ -662,16 +1168,7 @@ async def create_video(video: VideoCreate, user: dict = Depends(require_admin_or
         
         log_audit(user['id'], user['email'], 'create', 'video', response.data[0]['id'], video.client_id, None, video_data)
         
-        # Notify client
-        client_users = supabase.table('profiles').select('id').eq('client_id', video.client_id).execute()
-        for cu in client_users.data:
-            create_notification(
-                cu['id'],
-                'video_uploaded',
-                'Yeni Video',
-                f'"{video.title}" başlıklı yeni bir video yüklendi.',
-                '/client/videos'
-            )
+        notify_client_users(video.client_id, 'video_uploaded', 'Yeni Video', f'"{video.title}" başlıklı yeni bir video yüklendi.', '/client/videos')
         
         return response.data[0]
     except Exception as e:
@@ -686,10 +1183,7 @@ async def update_video_status(video_id: str, data: StatusUpdate, user: dict = De
         if not existing.data:
             raise HTTPException(status_code=404, detail="Video bulunamadı")
         
-        supabase.table('videos').update({
-            'status': data.status,
-            'notes': data.notes
-        }).eq('id', video_id).execute()
+        supabase.table('videos').update({'status': data.status, 'notes': data.notes}).eq('id', video_id).execute()
         
         log_audit(user['id'], user['email'], 'update_status', 'video', video_id, existing.data.get('client_id'), {'status': existing.data.get('status')}, {'status': data.status})
         
@@ -731,16 +1225,7 @@ async def create_design(design: DesignCreate, user: dict = Depends(require_admin
         
         log_audit(user['id'], user['email'], 'create', 'design', response.data[0]['id'], design.client_id, None, design_data)
         
-        # Notify client
-        client_users = supabase.table('profiles').select('id').eq('client_id', design.client_id).execute()
-        for cu in client_users.data:
-            create_notification(
-                cu['id'],
-                'design_uploaded',
-                'Yeni Tasarım',
-                f'"{design.title}" başlıklı yeni bir tasarım yüklendi.',
-                '/client/designs'
-            )
+        notify_client_users(design.client_id, 'design_uploaded', 'Yeni Tasarım', f'"{design.title}" başlıklı yeni bir tasarım yüklendi.', '/client/designs')
         
         return response.data[0]
     except Exception as e:
@@ -755,10 +1240,7 @@ async def update_design_status(design_id: str, data: StatusUpdate, user: dict = 
         if not existing.data:
             raise HTTPException(status_code=404, detail="Tasarım bulunamadı")
         
-        supabase.table('designs').update({
-            'status': data.status,
-            'notes': data.notes
-        }).eq('id', design_id).execute()
+        supabase.table('designs').update({'status': data.status, 'notes': data.notes}).eq('id', design_id).execute()
         
         log_audit(user['id'], user['email'], 'update_status', 'design', design_id, existing.data.get('client_id'), {'status': existing.data.get('status')}, {'status': data.status})
         
@@ -775,7 +1257,6 @@ async def update_design_status(design_id: str, data: StatusUpdate, user: dict = 
 # =====================================================
 @api_router.get("/calendar-events")
 async def get_all_calendar_events(user: dict = Depends(require_admin_or_staff)):
-    """Get all calendar events for admin view"""
     try:
         response = supabase.table('calendar_events').select('*, clients(company_name)').order('event_date').execute()
         
@@ -816,16 +1297,7 @@ async def create_calendar_event(event: CalendarEventCreate, user: dict = Depends
         
         log_audit(user['id'], user['email'], 'create', 'calendar_event', response.data[0]['id'], event.client_id, None, event_data)
         
-        # Notify client
-        client_users = supabase.table('profiles').select('id').eq('client_id', event.client_id).execute()
-        for cu in client_users.data:
-            create_notification(
-                cu['id'],
-                'event_created',
-                'Yeni Etkinlik',
-                f'"{event.title}" başlıklı yeni bir etkinlik oluşturuldu.',
-                '/client/videos'
-            )
+        notify_client_users(event.client_id, 'event_created', 'Yeni Etkinlik', f'"{event.title}" başlıklı yeni bir etkinlik oluşturuldu.', '/client/videos')
         
         return response.data[0]
     except Exception as e:
@@ -895,7 +1367,6 @@ async def get_campaigns(user: dict = Depends(get_current_user)):
         if user.get('role') in ['admin', 'staff']:
             response = supabase.table('campaigns').select('*').order('created_at', desc=True).execute()
         else:
-            # For clients, only show active campaigns that apply to them
             response = supabase.table('campaigns').select('*').eq('is_active', True).execute()
         
         return response.data
@@ -1015,7 +1486,12 @@ async def get_client_dashboard_stats(client_id: str, user: dict = Depends(get_cu
         videos = supabase.table('videos').select('id, status').eq('client_id', client_id).execute()
         designs = supabase.table('designs').select('id, status').eq('client_id', client_id).execute()
         ads = supabase.table('ad_reports').select('daily_spend').eq('client_id', client_id).execute()
-        client = supabase.table('clients').select('access_days_remaining, access_expires_at, status').eq('id', client_id).single().execute()
+        
+        # Get access info
+        access_info = get_client_access_info(client_id)
+        
+        # Get pending receipts count
+        pending_receipts = supabase.table('receipts').select('id', count='exact').eq('client_id', client_id).eq('status', 'pending').execute()
         
         total_ad_spend = sum(float(a.get('daily_spend', 0)) for a in ads.data)
         
@@ -1024,9 +1500,8 @@ async def get_client_dashboard_stats(client_id: str, user: dict = Depends(get_cu
             "designs_delivered": len([d for d in designs.data if d.get('status') == 'approved']),
             "content_published": len(videos.data) + len(designs.data),
             "monthly_ad_spend": total_ad_spend,
-            "access_days_remaining": client.data.get('access_days_remaining', 0) if client.data else 0,
-            "access_expires_at": client.data.get('access_expires_at') if client.data else None,
-            "client_status": client.data.get('status', 'pending') if client.data else 'pending'
+            "access_info": access_info,
+            "pending_receipts": pending_receipts.count or 0
         }
     except HTTPException:
         raise
@@ -1037,25 +1512,22 @@ async def get_client_dashboard_stats(client_id: str, user: dict = Depends(get_cu
             "designs_delivered": 0,
             "content_published": 0,
             "monthly_ad_spend": 0,
-            "access_days_remaining": 0,
-            "access_expires_at": None,
-            "client_status": "pending"
+            "access_info": None,
+            "pending_receipts": 0
         }
 
 
 # =====================================================
-# STORAGE - File upload URL generation
+# STORAGE
 # =====================================================
 @api_router.post("/storage/upload-url")
 async def get_upload_url(file_name: str, file_type: str, bucket: str = "uploads", user: dict = Depends(get_current_user)):
     try:
-        # Generate a unique path
         import uuid
         file_ext = file_name.split('.')[-1] if '.' in file_name else ''
         unique_name = f"{uuid.uuid4()}.{file_ext}" if file_ext else str(uuid.uuid4())
         path = f"{user['id']}/{unique_name}"
         
-        # The frontend will handle the actual upload to Supabase Storage
         return {
             "path": path,
             "bucket": bucket,
