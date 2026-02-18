@@ -100,33 +100,33 @@ export const AdminReceipts = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+        <Card className="p-6 bg-gradient-to-br from-orange-50 to-white border-orange-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-amber-100 rounded-xl">
-              <Clock className="h-6 w-6 text-amber-600" />
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <Clock className="h-6 w-6 text-orange-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-amber-900">{pendingReceipts.length}</p>
+          <p className="text-3xl font-semibold text-orange-900">{pendingReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Bekleyen Makbuz</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-white border-green-100">
+        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <CheckCircle className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-green-900">{approvedReceipts.length}</p>
+          <p className="text-3xl font-semibold text-emerald-900">{approvedReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Onaylanan</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-red-100">
+        <Card className="p-6 bg-gradient-to-br from-rose-50 to-white border-rose-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-red-100 rounded-xl">
-              <XCircle className="h-6 w-6 text-red-600" />
+            <div className="p-3 bg-rose-100 rounded-xl">
+              <XCircle className="h-6 w-6 text-rose-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-red-900">{rejectedReceipts.length}</p>
+          <p className="text-3xl font-semibold text-rose-900">{rejectedReceipts.length}</p>
           <p className="text-sm text-slate-600 mt-1">Reddedilen</p>
         </Card>
       </div>
