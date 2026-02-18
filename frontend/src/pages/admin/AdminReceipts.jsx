@@ -165,13 +165,13 @@ export const AdminReceipts = () => {
             <Card className="border-blue-100">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-blue-50">
-                    <TableHead>Müşteri</TableHead>
-                    <TableHead>Tutar</TableHead>
-                    <TableHead>Ödeme Tarihi</TableHead>
-                    <TableHead>Yüklenme Tarihi</TableHead>
-                    <TableHead>Durum</TableHead>
-                    <TableHead>İşlemler</TableHead>
+                  <TableRow className="bg-blue-50 border-b border-blue-100">
+                    <TableHead className="text-blue-900 font-semibold">Müşteri</TableHead>
+                    <TableHead className="text-blue-900 font-semibold">Tutar</TableHead>
+                    <TableHead className="text-blue-900 font-semibold">Ödeme Tarihi</TableHead>
+                    <TableHead className="text-blue-900 font-semibold">Yüklenme Tarihi</TableHead>
+                    <TableHead className="text-blue-900 font-semibold">Durum</TableHead>
+                    <TableHead className="text-blue-900 font-semibold">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
