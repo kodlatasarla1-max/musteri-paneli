@@ -131,13 +131,13 @@ export const AdminClients = () => {
       <Card className="border-blue-100 shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-50">
-              <TableHead>{tr.admin.clients.companyName}</TableHead>
-              <TableHead>{tr.admin.clients.contactName}</TableHead>
-              <TableHead>{tr.admin.clients.industry}</TableHead>
-              <TableHead>{tr.admin.clients.status}</TableHead>
-              <TableHead>{tr.admin.clients.accessDays}</TableHead>
-              <TableHead className="text-right">{tr.common.actions}</TableHead>
+            <TableRow className="bg-blue-50 border-b border-blue-100">
+              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.companyName}</TableHead>
+              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.contactName}</TableHead>
+              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.industry}</TableHead>
+              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.status}</TableHead>
+              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.accessDays}</TableHead>
+              <TableHead className="text-right text-blue-900 font-semibold">{tr.common.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
