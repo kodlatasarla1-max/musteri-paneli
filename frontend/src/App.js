@@ -8,6 +8,8 @@ import { Layout } from "./components/Layout";
 import { ClientDashboard } from "./pages/client/ClientDashboard";
 import { ClientVideos } from "./pages/client/ClientVideos";
 import { ClientDesigns } from "./pages/client/ClientDesigns";
+import { ClientReceipts } from "./pages/client/ClientReceipts";
+import { ClientFinance } from "./pages/client/ClientFinance";
 import { LockedService } from "./pages/client/LockedService";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
@@ -53,6 +55,8 @@ function App() {
             <Route path="dashboard" element={<ClientDashboard />} />
             <Route path="videos" element={<ClientVideos />} />
             <Route path="designs" element={<ClientDesigns />} />
+            <Route path="receipts" element={<ClientReceipts />} />
+            <Route path="finance" element={<ClientFinance />} />
             <Route
               path="social-media"
               element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}

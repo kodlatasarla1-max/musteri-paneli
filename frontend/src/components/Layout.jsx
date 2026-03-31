@@ -1,17 +1,40 @@
-import { Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell } from 'lucide-react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, 
+  LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell, 
+  Menu, X, ChevronRight, Wallet
+} from 'lucide-react';
 import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
-import { useState, useEffect } from 'react';
 import apiClient from '../utils/api';
 import { tr } from '../utils/translations';
 
 export const Layout = ({ role, clientId }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = getUser();
   const [clientServices, setClientServices] = useState([]);
   const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    // Check on mount
+    checkMobile();
+    
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (role === 'client' && clientId) {
@@ -23,13 +46,17 @@ export const Layout = ({ role, clientId }) => {
     }
   }, [role, clientId]);
 
-  // Refresh pending count every 30 seconds for admin
   useEffect(() => {
     if (role === 'admin' || role === 'staff') {
       const interval = setInterval(loadPendingReceiptsCount, 30000);
       return () => clearInterval(interval);
     }
   }, [role]);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const loadClientServices = async () => {
     try {
@@ -83,6 +110,8 @@ export const Layout = ({ role, clientId }) => {
     { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('Grafik Tasarım') },
     { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Web Sitesi Kurulumu') },
     { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-ticaret Yönetimi') },
+    { icon: Receipt, label: 'Makbuzlarım', path: '/client/receipts', active: true },
+    { icon: Wallet, label: 'Muhasebe', path: '/client/finance', active: true },
   ];
 
   const staffNav = [
@@ -98,62 +127,116 @@ export const Layout = ({ role, clientId }) => {
     logout();
   };
 
-  return (
-    <div className="min-h-screen" data-testid="layout-container">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-blue-900 to-blue-950 text-blue-100 flex flex-col border-r border-blue-800/50 z-50 shadow-xl" data-testid="sidebar">
-        <div className="p-6 border-b border-blue-800/50">
-          <h1 className="text-xl font-semibold text-white" data-testid="sidebar-title">{tr.sidebar.agencyOS}</h1>
+  const handleNavClick = (path) => {
+    navigate(path);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const SidebarContent = () => (
+    <>
+      <div className="p-4 lg:p-6 border-b border-blue-800/50 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg lg:text-xl font-semibold text-white" data-testid="sidebar-title">Ajans OS</h1>
           <p className="text-xs text-blue-300 mt-1" data-testid="user-role">{user?.full_name || role}</p>
         </div>
-
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = window.location.pathname === item.path;
-            const isLocked = role === 'client' && item.active === false && item.path !== '/client/dashboard';
-
-            return (
-              <button
-                key={item.path}
-                data-testid={`nav-item-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-blue-800/50 text-white shadow-lg backdrop-blur-sm'
-                    : isLocked
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-blue-200 hover:bg-blue-800/30 hover:text-white'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
-                    {item.badge}
-                  </span>
-                )}
-                {isLocked && <Lock className="h-4 w-4" />}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-blue-800/50">
-          <Button
-            data-testid="logout-button"
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start text-blue-200 hover:text-white hover:bg-blue-800/30 rounded-lg"
+        {isMobile && (
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 text-blue-200 hover:text-white lg:hidden"
           >
-            <LogOut className="h-5 w-5 mr-3" />
-            {tr.auth.logout}
-          </Button>
-        </div>
+            <X className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      <nav className="flex-1 p-3 lg:p-4 space-y-1 overflow-y-auto" data-testid="sidebar-nav">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          const isLocked = role === 'client' && item.active === false && item.path !== '/client/dashboard';
+
+          return (
+            <button
+              key={item.path}
+              data-testid={`nav-item-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+              onClick={() => handleNavClick(item.path)}
+              className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-blue-800/50 text-white shadow-lg backdrop-blur-sm'
+                  : isLocked
+                  ? 'text-blue-400 hover:text-blue-300'
+                  : 'text-blue-200 hover:bg-blue-800/30 hover:text-white'
+              }`}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <span className="flex-1 text-left truncate">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                  {item.badge}
+                </span>
+              )}
+              {isLocked && <Lock className="h-4 w-4 flex-shrink-0" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="p-3 lg:p-4 border-t border-blue-800/50">
+        <Button
+          data-testid="logout-button"
+          onClick={handleLogout}
+          variant="ghost"
+          className="w-full justify-start text-blue-200 hover:text-white hover:bg-blue-800/30 rounded-lg text-sm"
+        >
+          <LogOut className="h-5 w-5 mr-3" />
+          {tr.auth.logout}
+        </Button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50" data-testid="layout-container">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-r from-blue-900 to-blue-950 z-40 flex items-center justify-between px-4 shadow-lg">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 text-white hover:bg-blue-800/50 rounded-lg"
+          data-testid="mobile-menu-button"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+        <h1 className="text-white font-semibold">Ajans OS</h1>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div 
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 text-blue-100 flex flex-col border-r border-blue-800/50 z-50 shadow-xl transition-transform duration-300 ease-in-out
+          ${isMobile 
+            ? `w-72 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}` 
+            : 'w-64 translate-x-0'
+          }`}
+        data-testid="sidebar"
+      >
+        <SidebarContent />
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 min-h-screen bg-slate-50" data-testid="main-content">
+      <div 
+        className={`min-h-screen transition-all duration-300 ${isMobile ? 'pt-14' : 'ml-64'}`}
+        data-testid="main-content"
+      >
         <Outlet />
       </div>
     </div>

@@ -40,84 +40,84 @@ export const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <div className="p-8">{tr.common.loading}</div>;
+    return <div className="p-4 lg:p-8">{tr.common.loading}</div>;
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto" data-testid="admin-dashboard">
-      <div className="mb-8">
-        <h1 className="text-4xl font-medium text-slate-900 mb-2" data-testid="admin-dashboard-title">{tr.admin.dashboard.title}</h1>
-        <p className="text-slate-600">Ajans performansınızı ve müşteri aktivitelerini yönetin</p>
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto" data-testid="admin-dashboard">
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl lg:text-4xl font-medium text-slate-900 mb-1 lg:mb-2" data-testid="admin-dashboard-title">{tr.admin.dashboard.title}</h1>
+        <p className="text-sm lg:text-base text-slate-600">Ajans performansınızı ve müşteri aktivitelerini yönetin</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-total-clients">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Users className="h-6 w-6 text-blue-600" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-total-clients">
+          <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <div className="p-2 lg:p-3 bg-blue-100 rounded-lg lg:rounded-xl">
+              <Users className="h-4 w-4 lg:h-6 lg:w-6 text-blue-600" />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-semibold text-blue-900">{stats.totalClients}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.admin.dashboard.totalClients}</p>
+            <p className="text-2xl lg:text-3xl font-semibold text-blue-900">{stats.totalClients}</p>
+            <p className="text-xs lg:text-sm text-slate-600 mt-1">{tr.admin.dashboard.totalClients}</p>
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-active-clients">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-100 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-indigo-600" />
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-active-clients">
+          <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <div className="p-2 lg:p-3 bg-indigo-100 rounded-lg lg:rounded-xl">
+              <TrendingUp className="h-4 w-4 lg:h-6 lg:w-6 text-indigo-600" />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-semibold text-indigo-900">{stats.activeClients}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.admin.dashboard.activeClients}</p>
+            <p className="text-2xl lg:text-3xl font-semibold text-indigo-900">{stats.activeClients}</p>
+            <p className="text-xs lg:text-sm text-slate-600 mt-1">{tr.admin.dashboard.activeClients}</p>
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-videos">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-cyan-100 rounded-xl">
-              <Video className="h-6 w-6 text-cyan-600" />
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-videos">
+          <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <div className="p-2 lg:p-3 bg-cyan-100 rounded-lg lg:rounded-xl">
+              <Video className="h-4 w-4 lg:h-6 lg:w-6 text-cyan-600" />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-semibold text-cyan-900">{stats.totalVideos}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.admin.dashboard.videosProduced}</p>
+            <p className="text-2xl lg:text-3xl font-semibold text-cyan-900">{stats.totalVideos}</p>
+            <p className="text-xs lg:text-sm text-slate-600 mt-1">{tr.admin.dashboard.videosProduced}</p>
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-designs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-violet-100 rounded-xl">
-              <Image className="h-6 w-6 text-violet-600" />
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-designs">
+          <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <div className="p-2 lg:p-3 bg-violet-100 rounded-lg lg:rounded-xl">
+              <Image className="h-4 w-4 lg:h-6 lg:w-6 text-violet-600" />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-semibold text-violet-900">{stats.totalDesigns}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.admin.dashboard.designsCreated}</p>
+            <p className="text-2xl lg:text-3xl font-semibold text-violet-900">{stats.totalDesigns}</p>
+            <p className="text-xs lg:text-sm text-slate-600 mt-1">{tr.admin.dashboard.designsCreated}</p>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 border-blue-100">
-          <h2 className="text-xl font-medium text-slate-900 mb-4">{tr.admin.dashboard.quickActions}</h2>
-          <div className="space-y-3">
-            <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <Card className="p-4 lg:p-6 border-blue-100">
+          <h2 className="text-lg lg:text-xl font-medium text-slate-900 mb-3 lg:mb-4">{tr.admin.dashboard.quickActions}</h2>
+          <div className="space-y-2 lg:space-y-3">
+            <button className="w-full text-left px-3 lg:px-4 py-2.5 lg:py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
               {tr.admin.dashboard.addNewClient}
             </button>
-            <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
+            <button className="w-full text-left px-3 lg:px-4 py-2.5 lg:py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
               {tr.admin.dashboard.uploadContent}
             </button>
-            <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
+            <button className="w-full text-left px-3 lg:px-4 py-2.5 lg:py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors text-blue-900">
               {tr.admin.dashboard.reviewPendingReceipts}
             </button>
           </div>
         </Card>
 
-        <Card className="p-6 border-blue-100">
-          <h2 className="text-xl font-medium text-slate-900 mb-4">{tr.admin.dashboard.recentActivity}</h2>
+        <Card className="p-4 lg:p-6 border-blue-100">
+          <h2 className="text-lg lg:text-xl font-medium text-slate-900 mb-3 lg:mb-4">{tr.admin.dashboard.recentActivity}</h2>
           <p className="text-slate-600 text-sm">{tr.admin.dashboard.noRecentActivity}</p>
         </Card>
       </div>

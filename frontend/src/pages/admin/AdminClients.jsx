@@ -112,23 +112,79 @@ export const AdminClients = () => {
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <div className="p-4 lg:p-8">Loading...</div>;
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto" data-testid="admin-clients-page">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto" data-testid="admin-clients-page">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8">
         <div>
-          <h1 className="text-4xl font-medium text-slate-900" data-testid="clients-title">{tr.admin.clients.title}</h1>
-          <p className="text-slate-600 mt-2">Müşteri profillerini ve hizmet erişimlerini yönetin</p>
+          <h1 className="text-2xl lg:text-4xl font-medium text-slate-900" data-testid="clients-title">{tr.admin.clients.title}</h1>
+          <p className="text-sm lg:text-base text-slate-600 mt-1 lg:mt-2">Müşteri profillerini ve hizmet erişimlerini yönetin</p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="add-client-button">
+        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" data-testid="add-client-button">
           <Plus className="h-4 w-4 mr-2" />
           {tr.admin.clients.addClient}
         </Button>
       </div>
 
-      <Card className="border-blue-100 shadow-sm">
+      {/* Mobile: Card View */}
+      <div className="lg:hidden space-y-3">
+        {clients.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-slate-600">{tr.admin.clients.noClients}</p>
+          </Card>
+        ) : (
+          clients.map((client) => (
+            <Card key={client.id} className="p-4" data-testid={`client-card-${client.id}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-medium text-slate-900">{client.company_name}</h3>
+                  <p className="text-sm text-slate-600">{client.contact_name}</p>
+                </div>
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  client.status === 'active' ? 'bg-green-100 text-green-800' :
+                  client.status === 'expired' ? 'bg-red-100 text-red-800' :
+                  'bg-slate-100 text-slate-800'
+                }`}>
+                  {tr.status[client.status] || client.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                <div>
+                  <span className="text-slate-500">Sektör:</span>
+                  <span className="ml-1">{client.industry}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Erişim:</span>
+                  <span className="ml-1">{client.access_days_remaining} gün</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditDialog(client)}
+                  className="flex-1 border-blue-200 text-blue-600"
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Düzenle
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDelete(client.id)}
+                  className="border-red-200 text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Desktop: Table View */}
+      <Card className="border-blue-100 shadow-sm hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-blue-50 border-b border-blue-100">

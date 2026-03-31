@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Video, Image, BarChart3, Calendar, TrendingUp, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Video, Image, BarChart3, Calendar, TrendingUp, Clock, AlertCircle, CheckCircle, Receipt, Wallet } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { getUser } from '../../utils/auth';
 import { toast } from 'sonner';
@@ -8,19 +9,20 @@ import { Button } from '../../components/ui/button';
 import { tr } from '../../utils/translations';
 
 export const ClientDashboard = () => {
+  const navigate = useNavigate();
   const user = getUser();
   const clientId = user?.client_id;
   const [client, setClient] = useState(null);
   const [services, setServices] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
-  const [summary, setSummary] = useState({
+  const [accessInfo, setAccessInfo] = useState(null);
+  const [stats, setStats] = useState({
     videosDelivered: 0,
     designsDelivered: 0,
-    postsPublished: 0,
-    monthlyAdSpend: 0
+    contentPublished: 0,
+    monthlyAdSpend: 0,
+    pendingReceipts: 0
   });
   const [loading, setLoading] = useState(true);
-  const [showCampaign, setShowCampaign] = useState(null);
 
   useEffect(() => {
     if (clientId) {
@@ -31,67 +33,44 @@ export const ClientDashboard = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [clientRes, servicesRes, campaignsRes] = await Promise.all([
+      const [clientRes, servicesRes, statsRes] = await Promise.all([
         apiClient.get(`/clients/${clientId}`),
         apiClient.get(`/client-services/${clientId}`),
-        apiClient.get('/campaigns')
+        apiClient.get(`/stats/client-dashboard/${clientId}`)
       ]);
 
       setClient(clientRes.data);
       setServices(servicesRes.data);
-      setCampaigns(campaignsRes.data);
-
-      if (campaignsRes.data.length > 0) {
-        setShowCampaign(campaignsRes.data[0]);
-      }
-
-      const now = new Date();
-      const currentMonth = now.toISOString().slice(0, 7);
-
-      const [videosRes, designsRes, postsRes, adsRes] = await Promise.all([
-        apiClient.get(`/videos/${clientId}`),
-        apiClient.get(`/designs/${clientId}`),
-        apiClient.get(`/social-media-posts/${clientId}`),
-        apiClient.get(`/ads-reports/${clientId}`)
-      ]);
-
-      setSummary({
-        videosDelivered: videosRes.data.filter(v => v.status === 'approved').length,
-        designsDelivered: designsRes.data.filter(d => d.status === 'approved').length,
-        postsPublished: postsRes.data.filter(p => p.status === 'published').length,
-        monthlyAdSpend: adsRes.data
-          .filter(r => r.report_date.startsWith(currentMonth))
-          .reduce((sum, r) => sum + r.daily_spend, 0)
+      setAccessInfo(statsRes.data.access_info || clientRes.data.access_info);
+      setStats({
+        videosDelivered: statsRes.data.videos_delivered || 0,
+        designsDelivered: statsRes.data.designs_delivered || 0,
+        contentPublished: statsRes.data.content_published || 0,
+        monthlyAdSpend: statsRes.data.monthly_ad_spend || 0,
+        pendingReceipts: statsRes.data.pending_receipts || 0
       });
     } catch (error) {
       console.error('Error loading dashboard:', error);
-      toast.error(tr.client.dashboard.welcomeBack + ' yüklenemedi');
+      toast.error('Dashboard yüklenemedi');
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateDaysRemaining = () => {
-    if (!client?.access_expires_at) return 0;
-    const now = new Date();
-    const expiry = new Date(client.access_expires_at);
-    const diffTime = expiry - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  };
-
-  const daysRemaining = calculateDaysRemaining();
-  const isExpiringSoon = daysRemaining <= 7;
-  const isExpired = daysRemaining === 0;
+  const hasAccess = accessInfo?.has_access;
+  const hasPendingReceipt = accessInfo?.has_pending_receipt || stats.pendingReceipts > 0;
+  const daysRemaining = accessInfo?.days_remaining || 0;
+  const accessUntil = accessInfo?.active_until;
+  const isExpiringSoon = hasAccess && daysRemaining <= 7;
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 lg:p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-blue-100 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-blue-50 rounded"></div>
+              <div key={i} className="h-32 bg-blue-50 rounded-xl"></div>
             ))}
           </div>
         </div>
@@ -100,142 +79,186 @@ export const ClientDashboard = () => {
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto" data-testid="client-dashboard">
-      <div className="mb-8">
-        <h1 className="text-4xl font-medium text-slate-900 mb-2" data-testid="dashboard-title">
-          {tr.client.dashboard.welcomeBack}, {user?.full_name}
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto" data-testid="client-dashboard">
+      {/* Header */}
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl lg:text-4xl font-medium text-slate-900 mb-2" data-testid="dashboard-title">
+          Hoş Geldiniz, {user?.full_name}
         </h1>
-        <p className="text-slate-600">{tr.client.dashboard.activityOverview}</p>
+        <p className="text-sm lg:text-base text-slate-600">Hesabınızın genel durumu</p>
       </div>
 
-      {(isExpiringSoon || isExpired) && (
-        <div className={`mb-6 p-4 rounded-lg border ${
-          isExpired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'
-        }`} data-testid="access-status-banner">
-          <div className="flex items-center gap-3">
-            <Clock className={`h-5 w-5 ${isExpired ? 'text-red-600' : 'text-amber-600'}`} />
+      {/* Access Status Banner */}
+      {!hasAccess && hasPendingReceipt && (
+        <div className="mb-6 p-4 lg:p-6 rounded-xl border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50" data-testid="pending-approval-banner">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="p-3 bg-orange-100 rounded-full">
+              <Clock className="h-6 w-6 text-orange-600" />
+            </div>
             <div className="flex-1">
-              <p className={`font-medium ${isExpired ? 'text-red-900' : 'text-amber-900'}`}>
-                {isExpired ? tr.client.dashboard.accessExpired : tr.client.dashboard.accessExpiringSoon.replace('{{days}}', daysRemaining)}
-              </p>
-              <p className={`text-sm ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
-                {isExpired ? tr.client.dashboard.pleaseRenew : tr.client.dashboard.renewSoon}
+              <h3 className="text-lg font-semibold text-orange-900">Onay Bekleniyor</h3>
+              <p className="text-sm text-orange-700 mt-1">
+                Yüklediğiniz makbuz admin onayı bekliyor. Onaylandıktan sonra 30 günlük erişiminiz başlayacaktır.
               </p>
             </div>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" data-testid="renew-button">
-              {tr.client.dashboard.renewNow}
+            <Button 
+              onClick={() => navigate('/client/receipts')}
+              className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto"
+            >
+              Makbuzları Görüntüle
             </Button>
           </div>
         </div>
       )}
 
-      {showCampaign && (
-        <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-xl relative shadow-lg" data-testid="campaign-banner">
-          <button
-            onClick={() => setShowCampaign(null)}
-            className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
-            data-testid="close-campaign-button"
-          >
-            ×
-          </button>
-          <h3 className="text-xl font-medium mb-2">{showCampaign.title}</h3>
-          <p className="mb-4 text-blue-100">{showCampaign.content}</p>
-          <Button variant="secondary" size="sm" className="bg-white text-blue-600 hover:bg-blue-50" data-testid="campaign-cta-button">
-            {showCampaign.cta_type === 'whatsapp' ? 'WhatsApp ile Sohbet Et' : 
-             showCampaign.cta_type === 'call' ? 'Arama Talebi' : 'Daha Fazla Bilgi'}
-          </Button>
+      {!hasAccess && !hasPendingReceipt && (
+        <div className="mb-6 p-4 lg:p-6 rounded-xl border-2 border-red-200 bg-gradient-to-r from-red-50 to-rose-50" data-testid="no-access-banner">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-900">Erişim Süresi Doldu</h3>
+              <p className="text-sm text-red-700 mt-1">
+                Panele tam erişim için lütfen ödeme makbuzunuzu yükleyin. Onaylandıktan sonra 30 günlük erişiminiz başlayacaktır.
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/client/receipts')}
+              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+            >
+              Makbuz Yükle
+            </Button>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-videos">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Video className="h-6 w-6 text-blue-600" />
+      {hasAccess && (
+        <div className={`mb-6 p-4 lg:p-6 rounded-xl border-2 ${
+          isExpiringSoon 
+            ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50' 
+            : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50'
+        }`} data-testid="access-active-banner">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className={`p-3 rounded-full ${isExpiringSoon ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+              <CheckCircle className={`h-6 w-6 ${isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'}`} />
+            </div>
+            <div className="flex-1">
+              <h3 className={`text-lg font-semibold ${isExpiringSoon ? 'text-amber-900' : 'text-emerald-900'}`}>
+                Erişim Aktif
+              </h3>
+              <p className={`text-sm mt-1 ${isExpiringSoon ? 'text-amber-700' : 'text-emerald-700'}`}>
+                Bitiş Tarihi: {accessUntil ? new Date(accessUntil).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className={`text-3xl lg:text-4xl font-bold ${isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {daysRemaining}
+              </p>
+              <p className={`text-xs ${isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'}`}>gün kaldı</p>
             </div>
           </div>
-          <div>
-            <p className="text-3xl font-semibold text-blue-900">{summary.videosDelivered}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.client.dashboard.videosDelivered}</p>
+        </div>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100" data-testid="stat-videos">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 lg:p-3 bg-blue-100 rounded-lg">
+              <Video className="h-4 w-4 lg:h-6 lg:w-6 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl lg:text-3xl font-semibold text-blue-900">{stats.videosDelivered}</p>
+          <p className="text-xs lg:text-sm text-slate-600 mt-1">Teslim Edilen Video</p>
+        </Card>
+
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100" data-testid="stat-designs">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 lg:p-3 bg-indigo-100 rounded-lg">
+              <Image className="h-4 w-4 lg:h-6 lg:w-6 text-indigo-600" />
+            </div>
+          </div>
+          <p className="text-2xl lg:text-3xl font-semibold text-indigo-900">{stats.designsDelivered}</p>
+          <p className="text-xs lg:text-sm text-slate-600 mt-1">Teslim Edilen Tasarım</p>
+        </Card>
+
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100" data-testid="stat-content">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 lg:p-3 bg-cyan-100 rounded-lg">
+              <Calendar className="h-4 w-4 lg:h-6 lg:w-6 text-cyan-600" />
+            </div>
+          </div>
+          <p className="text-2xl lg:text-3xl font-semibold text-cyan-900">{stats.contentPublished}</p>
+          <p className="text-xs lg:text-sm text-slate-600 mt-1">Toplam İçerik</p>
+        </Card>
+
+        <Card className="p-4 lg:p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100" data-testid="stat-ad-spend">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 lg:p-3 bg-violet-100 rounded-lg">
+              <TrendingUp className="h-4 w-4 lg:h-6 lg:w-6 text-violet-600" />
+            </div>
+          </div>
+          <p className="text-2xl lg:text-3xl font-semibold text-violet-900">₺{stats.monthlyAdSpend.toLocaleString('tr-TR')}</p>
+          <p className="text-xs lg:text-sm text-slate-600 mt-1">Aylık Reklam Harcaması</p>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <Card className="p-4 lg:p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/client/receipts')} data-testid="quick-action-receipts">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <Receipt className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-slate-900">Makbuzlarım</h3>
+              <p className="text-sm text-slate-600">Ödeme makbuzlarınızı görüntüleyin ve yükleyin</p>
+            </div>
+            {stats.pendingReceipts > 0 && (
+              <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {stats.pendingReceipts} Bekleyen
+              </span>
+            )}
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-designs">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-100 rounded-lg">
-              <Image className="h-6 w-6 text-indigo-600" />
+        <Card className="p-4 lg:p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/client/finance')} data-testid="quick-action-finance">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Wallet className="h-6 w-6 text-emerald-600" />
             </div>
-          </div>
-          <div>
-            <p className="text-3xl font-semibold text-indigo-900">{summary.designsDelivered}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.client.dashboard.designsDelivered}</p>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-posts">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-cyan-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-cyan-600" />
+            <div className="flex-1">
+              <h3 className="font-medium text-slate-900">Muhasebe</h3>
+              <p className="text-sm text-slate-600">Gelir ve giderlerinizi takip edin</p>
             </div>
-          </div>
-          <div>
-            <p className="text-3xl font-semibold text-cyan-900">{summary.postsPublished}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.client.dashboard.contentPublished}</p>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100 shadow-sm hover:shadow-md transition-shadow" data-testid="stat-ad-spend">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-violet-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-violet-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-3xl font-semibold text-violet-900">${summary.monthlyAdSpend.toFixed(2)}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.client.dashboard.monthlyAdSpend}</p>
           </div>
         </Card>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-medium text-slate-900 mb-6" data-testid="active-services-title">
-          {tr.client.dashboard.yourActiveServices}
+      {/* Active Services */}
+      <div>
+        <h2 className="text-lg lg:text-2xl font-medium text-slate-900 mb-4 lg:mb-6">
+          Aktif Hizmetleriniz
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
           {services.filter(s => s.is_active).length === 0 ? (
-            <Card className="p-8 col-span-3 text-center bg-blue-50 border-blue-100" data-testid="no-active-services">
-              <p className="text-slate-600">{tr.client.dashboard.noActiveServices}</p>
+            <Card className="p-6 lg:p-8 col-span-full text-center bg-slate-50 border-slate-200" data-testid="no-active-services">
+              <p className="text-slate-600">Henüz aktif hizmetiniz bulunmuyor.</p>
             </Card>
           ) : (
             services.filter(s => s.is_active).map((service) => (
-              <Card key={service.id} className="p-6 bg-white border-blue-100 hover:border-blue-200 shadow-sm hover:shadow-md transition-all" data-testid={`service-card-${service.service_name.toLowerCase().replace(/\s+/g, '-')}`}>
-                <div className="flex items-center gap-3 mb-3">
+              <Card key={service.id} className="p-4 lg:p-6 bg-white border-blue-100 hover:border-blue-200 hover:shadow-md transition-all" data-testid={`service-card-${service.service_id}`}>
+                <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-green-700 font-medium">{tr.client.dashboard.activeAndRunning}</span>
+                  <span className="text-xs text-green-700 font-medium">Aktif</span>
                 </div>
-                <h3 className="text-lg font-medium text-slate-900">{service.service_name}</h3>
+                <h3 className="font-medium text-slate-900">{service.service_name}</h3>
               </Card>
             ))
           )}
         </div>
       </div>
-
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200" data-testid="access-days-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-slate-900">{tr.client.dashboard.accessDaysRemaining}</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              {tr.client.dashboard.subscriptionExpires}: {client?.access_expires_at ? new Date(client.access_expires_at).toLocaleDateString('tr-TR') : 'N/A'}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className={`text-5xl font-semibold ${
-              daysRemaining <= 7 ? 'text-red-600' : 'text-blue-600'
-            }`}>{daysRemaining}</p>
-            <p className="text-sm text-slate-600 mt-1">{tr.client.dashboard.days}</p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 };
