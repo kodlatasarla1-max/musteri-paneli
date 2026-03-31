@@ -1,7 +1,7 @@
 # Agency OS - Product Requirements Document
 
 ## Overview
-Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
+Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı, revizyon sistemi ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
 
 ## Technical Stack
 - **Frontend:** React, Tailwind CSS, shadcn/ui
@@ -12,194 +12,135 @@ Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. M�
 
 ## Completed Features ✅
 
-### Phase 1: Core Infrastructure (December 2025)
+### Phase 1: Core Infrastructure
 - [x] Supabase veritabanı entegrasyonu
 - [x] SQL şeması (profiles, clients, services, receipts, videos, designs, vb.)
 - [x] RLS (Row Level Security) politikaları
 - [x] Backend tamamen Supabase'e migrate edildi
 - [x] Supabase Auth entegrasyonu (login/signup)
-- [x] Admin kullanıcısı oluşturuldu (admin@agency.com / admin123)
+- [x] Admin kullanıcısı oluşturuldu
 
-### Phase 2: Admin Panel (December 2025)
+### Phase 2: Admin Panel
 - [x] Admin Dashboard - istatistikler kartları
 - [x] Müşteri Yönetimi - CRUD operasyonları
 - [x] Hizmet Yönetimi - 6 varsayılan hizmet
 - [x] Makbuz Yönetimi - yükleme, onay/red, 30 gün erişim aktivasyonu
-- [x] Sidebar navigation - badge ile bekleyen makbuz sayısı
-- [x] Türkçe çeviriler
-- [x] **Personel Yönetimi (YENİ)** - CRUD, izin yönetimi, stats kartları
-- [x] **Meta Ads Entegrasyonu (YENİ)** - Token girişi, hesap bağlama, veri senkronizasyonu UI
+- [x] Personel Yönetimi - CRUD, izin yönetimi
+- [x] Meta Ads Entegrasyonu - Token girişi, hesap bağlama
+- [x] **Revizyon Yönetimi (YENİ)** - İçerik revizyonlarını yönetme
+- [x] **Bildirim Merkezi (YENİ)** - Tüm bildirimleri görüntüleme
 
-### Phase 3: Client Portal (December 2025)
-- [x] Client Dashboard - erişim durumu bannerları (Aktif/Bekleyen/Süresi Doldu)
-- [x] Makbuz Yükleme - drag & drop, URL yapıştırma
-- [x] Muhasebe Modülü - gelir/gider takibi, aylık grafik
-- [x] Hizmet durumu görüntüleme (kilitli/aktif)
-- [x] **Profil Düzenleme (YENİ)** - Avatar yükleme, kişisel bilgi güncelleme
+### Phase 3: Client Portal
+- [x] Client Dashboard - erişim durumu bannerları
+- [x] Makbuz Yükleme - drag & drop
+- [x] Muhasebe Modülü - gelir/gider takibi
+- [x] Profil Düzenleme - Avatar yükleme
+- [x] **Revizyon Talebi (YENİ)** - Video/tasarım için revizyon iste
+- [x] **Bildirim Merkezi (YENİ)** - Bildirimleri görüntüleme
 
-### Phase 4: UX Improvements (December 2025)
-- [x] Mobile hamburger menü - CSS-based responsive
-- [x] Dialog accessibility - aria-describedby tüm dialog'larda
+### Phase 4: Access Control & Notifications
+- [x] **Staff İzin Sistemi (YENİ)** - 5 farklı izin türü
+- [x] **User Permissions API (YENİ)** - Frontend erişim kontrolü için
+- [x] **Geliştirilmiş Bildirim API'ları (YENİ)** - Gruplu görüntüleme, silme
+
+### Phase 5: UX Improvements
+- [x] Mobile hamburger menü
+- [x] Dialog accessibility
 - [x] Tutarlı renk sistemi
-- [x] Tam responsive layout (mobil + masaüstü)
-- [x] Deployment health check - tüm kontroller geçti
+- [x] Tam responsive layout
 
-## Pending Setup ⚠️
-
-### Supabase Tables (Kullanıcı Tarafından Oluşturulmalı)
-Aşağıdaki SQL'i Supabase Dashboard > SQL Editor'da çalıştırın:
-
-```sql
--- /app/supabase/migrations/003_staff_meta_profile.sql içeriği
-
-CREATE TABLE IF NOT EXISTS staff_permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    staff_id UUID NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
-    can_manage_clients BOOLEAN DEFAULT FALSE,
-    can_manage_content BOOLEAN DEFAULT FALSE,
-    can_view_reports BOOLEAN DEFAULT FALSE,
-    can_approve_receipts BOOLEAN DEFAULT FALSE,
-    can_manage_calendar BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS meta_accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    client_id UUID NOT NULL UNIQUE REFERENCES clients(id) ON DELETE CASCADE,
-    meta_access_token TEXT NOT NULL,
-    ad_account_id TEXT NOT NULL,
-    account_name TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    last_sync TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- RLS Policies
-ALTER TABLE staff_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE meta_accounts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Admin can manage staff permissions" ON staff_permissions
-    FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
-
-CREATE POLICY "Admin and staff can manage meta accounts" ON meta_accounts
-    FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'staff')));
-```
-
-## Testing Status
-- **Backend:** 88% (7/8 test geçti)
-- **Frontend:** 90% çalışıyor
-- **Test raporu:** /app/test_reports/iteration_3.json
-- **Son test tarihi:** December 2025
-- **Kritik:** meta_accounts tablosu Supabase'de oluşturulmalı
-
-## Backlog (P1)
-
-### Tamamlanmayı Bekleyen
-- [ ] Supabase'de meta_accounts ve staff_permissions tabloları oluşturulmalı
-
-### Gelecek Özellikler
-- [ ] Staff rolü için izinlere göre sayfa erişimi kontrolü
-- [ ] Video/Tasarım galeri görüntüleme (Client)
-- [ ] Revizyon sistemi (içerik onay/revizyon)
-- [ ] Bildirim merkezi (Client & Admin)
-- [ ] E-posta bildirimleri
-
-## Future (P2)
-- [ ] Meta Ads OAuth entegrasyonu (şu an manuel token)
-- [ ] WhatsApp bildirimleri
-- [ ] Detaylı raporlama ve analytics
-- [ ] Çoklu dil desteği
+## Testing Status ✅
+- **Backend:** 100% (Tüm endpoint'ler çalışıyor)
+- **Frontend:** 100% (Tüm sayfalar doğru yükleniyor)
+- **Test raporu:** /app/test_reports/iteration_4.json
+- **Retest gerekli:** Hayır
 
 ## API Endpoints
-All endpoints prefixed with `/api`
 
 ### Auth
 - POST /auth/login
 - POST /auth/register
 - GET /auth/me
 
-### Clients
-- GET /clients
-- POST /clients
-- PUT /clients/{id}
-- DELETE /clients/{id}
+### Clients & Staff
+- GET/POST/PUT/DELETE /clients
+- GET/POST/PUT/DELETE /staff
+- GET/POST /staff-permissions
 
-### Staff (YENİ)
-- GET /staff
-- POST /staff
-- PUT /staff/{id}
-- DELETE /staff/{id}
-- GET /staff-permissions/{id}
-- POST /staff-permissions
+### Revisions (YENİ)
+- GET /revisions - Tüm revizyonlar
+- GET /revisions/client/{client_id} - Müşteri revizyonları
+- GET /revisions/pending/count - Bekleyen sayısı
+- POST /revisions - Yeni revizyon talebi
+- PUT /revisions/{id} - Revizyon yanıtla
+- DELETE /revisions/{id} - Revizyon sil
 
-### Profile (YENİ)
-- GET /profile
-- PUT /profile
-- POST /profile/avatar
+### Notifications (GELİŞTİRİLMİŞ)
+- GET /notifications/all - Tüm bildirimler
+- GET /notifications/grouped - Tarihe göre gruplu
+- GET /notifications/unread-count - Okunmamış sayısı
+- PUT /notifications/{id}/read - Okundu işaretle
+- PUT /notifications/mark-all-read - Tümünü okundu işaretle
+- DELETE /notifications/{id} - Bildirim sil
+- DELETE /notifications/clear-all - Tümünü sil
 
-### Meta Accounts (YENİ)
-- GET /meta-accounts
-- GET /meta-accounts/{client_id}
-- POST /meta-accounts
-- DELETE /meta-accounts/{client_id}
-- POST /meta-accounts/{client_id}/fetch-data
+### Permissions (YENİ)
+- GET /user/permissions - Kullanıcı yetkileri
 
-### Receipts
-- GET /receipts
-- POST /receipts
-- PUT /receipts/{id}/approve
-
-### Client Finance
-- GET /client-finance/{client_id}
-- POST /client-finance/{client_id}
-- PUT /client-finance/{client_id}/{id}
-- DELETE /client-finance/{client_id}/{id}
+### Other
+- GET/POST /receipts
+- GET/POST /client-finance/{client_id}
+- GET/POST /meta-accounts
+- GET/POST /videos, /designs
+- GET/POST /calendar-events
 
 ## Database Schema
-Migrations:
-- `/app/supabase/migrations/001_initial_schema.sql`
-- `/app/supabase/migrations/002_client_finance_access.sql`
-- `/app/supabase/migrations/003_staff_meta_profile.sql` (YENİ)
+Supabase Migrations:
+- `001_initial_schema.sql`
+- `002_client_finance_access.sql`
+- `003_staff_meta_profile.sql`
 
-## Environment Variables
+### New Tables
+- `staff_permissions` - Personel yetkileri
+- `meta_accounts` - Meta reklam hesapları
+- `revisions` - İçerik revizyon talepleri
 
-### Backend (.env)
-- SUPABASE_URL
-- SUPABASE_ANON_KEY
-- SUPABASE_SERVICE_KEY
+## New Pages
+- `/admin/revisions` - Revizyon Yönetimi
+- `/admin/notifications` - Bildirim Merkezi
+- `/client/revisions` - Revizyon Taleplerim
+- `/client/notifications` - Bildirimlerim
 
-### Frontend (.env)
-- REACT_APP_BACKEND_URL
-- REACT_APP_SUPABASE_URL
-- REACT_APP_SUPABASE_ANON_KEY
+## Staff Permission Types
+1. `can_manage_clients` - Müşteri CRUD
+2. `can_manage_content` - Video/Tasarım yönetimi
+3. `can_view_reports` - Rapor görüntüleme
+4. `can_approve_receipts` - Makbuz onaylama
+5. `can_manage_calendar` - Takvim yönetimi
 
 ## Login Credentials
 - **Admin:** admin@agency.com / admin123
 
-## New Pages Added
-- `/admin/staff` - Personel Yönetimi
-- `/admin/meta-integration` - Meta Ads Entegrasyonu
-- `/client/profile` - Müşteri Profil Düzenleme
+## Backlog (P2)
+- [ ] Staff rolü için frontend erişim kısıtlaması
+- [ ] Meta Ads OAuth entegrasyonu
+- [ ] WhatsApp bildirimleri
+- [ ] E-posta bildirimleri
+- [ ] Detaylı raporlama
 
-## Key Business Logic
+## Revision Workflow
+1. Client içerik görüntüler (video/tasarım)
+2. Client "Revizyon Talep Et" butonuna tıklar
+3. Client mesaj yazar ve gönderir
+4. Admin revizyonlar sayfasında görür
+5. Admin yanıt yazar ve durum günceller (İşlemde/Tamamlandı/Reddedildi)
+6. Client bildirim alır ve yanıtı görür
 
-### Staff Permissions
-Personel için 5 ayrı izin:
-- can_manage_clients: Müşteri CRUD
-- can_manage_content: Video/Tasarım yönetimi
-- can_view_reports: Rapor görüntüleme
-- can_approve_receipts: Makbuz onaylama
-- can_manage_calendar: Takvim yönetimi
-
-### Meta Ads Integration
-1. Admin, müşteri için Meta Access Token ve Ad Account ID girer
-2. Hesap kaydedilir
-3. "Senkronize Et" butonu ile son 7 günün reklam verileri çekilir
-4. Veriler ad_reports tablosuna kaydedilir
-5. Reklam Raporları sayfasında görüntülenir
-
-### Client Profile
-- Avatar Supabase Storage'a yüklenir
-- Profil bilgileri hem profiles hem clients tablosunda güncellenir
+## Notification Types
+- `receipt_approved` - Makbuz onaylandı
+- `receipt_rejected` - Makbuz reddedildi
+- `receipt_uploaded` - Yeni makbuz yüklendi
+- `revision_request` - Yeni revizyon talebi
+- `revision_response` - Revizyon yanıtlandı
+- `access_expiring` - Erişim süresi doluyor
+- `access_expired` - Erişim süresi doldu
