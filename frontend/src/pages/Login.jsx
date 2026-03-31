@@ -29,13 +29,13 @@ export const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || tr.auth.loginFailed);
+        throw new Error(data.detail || tr.auth.loginFailed);
       }
 
-      const data = await response.json();
-      const { access_token, role, client_id, user } = data;
+      const { access_token, role, user } = data;
 
       setToken(access_token);
       setUser(user);
