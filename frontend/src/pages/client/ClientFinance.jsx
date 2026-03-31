@@ -10,7 +10,7 @@ import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 
@@ -429,9 +429,12 @@ export const ClientFinance = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby="finance-dialog-description">
           <DialogHeader>
             <DialogTitle>{editingTransaction ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}</DialogTitle>
+            <DialogDescription id="finance-dialog-description">
+              {editingTransaction ? 'Mevcut işlemi düzenleyin.' : 'Gelir veya gider kaydı ekleyin.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

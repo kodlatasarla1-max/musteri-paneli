@@ -18,23 +18,27 @@ export const Layout = ({ role, clientId }) => {
   const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+
+  // Use CSS media queries instead of JS state for reliable responsive behavior
+  const getIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 1024;
+  const [isMobile, setIsMobile] = useState(getIsMobile());
 
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
+    const handleResize = () => {
+      const mobile = getIsMobile();
       setIsMobile(mobile);
-      if (!mobile) {
+      // Close sidebar when switching to desktop
+      if (!mobile && sidebarOpen) {
         setSidebarOpen(false);
       }
     };
     
     // Check on mount
-    checkMobile();
+    handleResize();
     
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     if (role === 'client' && clientId) {
@@ -199,46 +203,53 @@ export const Layout = ({ role, clientId }) => {
 
   return (
     <div className="min-h-screen bg-slate-50" data-testid="layout-container">
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-r from-blue-900 to-blue-950 z-40 flex items-center justify-between px-4 shadow-lg">
+      {/* Mobile Header - Always visible on mobile */}
+      <header 
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-r from-blue-900 to-blue-950 z-40 flex items-center justify-between px-4 shadow-lg"
+        data-testid="mobile-header"
+      >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 text-white hover:bg-blue-800/50 rounded-lg"
+          className="p-2 text-white hover:bg-blue-800/50 rounded-lg transition-colors active:scale-95"
           data-testid="mobile-menu-button"
+          aria-label="Menüyü aç"
+          aria-expanded={sidebarOpen}
         >
           <Menu className="h-6 w-6" />
         </button>
-        <h1 className="text-white font-semibold">Ajans OS</h1>
-        <div className="w-10" /> {/* Spacer for centering */}
-      </div>
+        <h1 className="text-white font-semibold text-lg">Ajans OS</h1>
+        <div className="w-10" aria-hidden="true" />
+      </header>
 
       {/* Mobile Sidebar Overlay */}
-      {isMobile && sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <div 
+        className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
 
       {/* Sidebar */}
-      <div 
+      <aside 
         className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 text-blue-100 flex flex-col border-r border-blue-800/50 z-50 shadow-xl transition-transform duration-300 ease-in-out
-          ${isMobile 
-            ? `w-72 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}` 
-            : 'w-64 translate-x-0'
-          }`}
+          w-72 lg:w-64
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
         data-testid="sidebar"
+        role="navigation"
+        aria-label="Ana menü"
       >
         <SidebarContent />
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div 
-        className={`min-h-screen transition-all duration-300 ${isMobile ? 'pt-14' : 'ml-64'}`}
+      <main 
+        className="min-h-screen transition-all duration-300 pt-14 lg:pt-0 lg:ml-64"
         data-testid="main-content"
       >
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 };

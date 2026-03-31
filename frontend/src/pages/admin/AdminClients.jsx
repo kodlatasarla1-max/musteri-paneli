@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '../../components/ui/dialog';
 import {
@@ -257,9 +258,12 @@ export const AdminClients = () => {
         setShowDialog(open);
         if (!open) resetForm();
       }}>
-        <DialogContent data-testid="client-dialog">
+        <DialogContent data-testid="client-dialog" aria-describedby="client-dialog-description">
           <DialogHeader>
             <DialogTitle>{editingClient ? tr.admin.clients.editClient : tr.admin.clients.addClient}</DialogTitle>
+            <DialogDescription id="client-dialog-description">
+              {editingClient ? 'Müşteri bilgilerini güncelleyin.' : 'Yeni müşteri bilgilerini girin.'}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">

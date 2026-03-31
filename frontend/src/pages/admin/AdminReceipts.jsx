@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '../../components/ui/dialog';
 import {
@@ -224,11 +225,16 @@ export const AdminReceipts = () => {
 
       {/* Approval/Rejection Dialog */}
       <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
-        <DialogContent data-testid="receipt-action-dialog">
+        <DialogContent data-testid="receipt-action-dialog" aria-describedby="receipt-action-description">
           <DialogHeader>
             <DialogTitle>
               {selectedReceipt?.action === 'approve' ? 'Makbuzu Onayla' : 'Makbuzu Reddet'}
             </DialogTitle>
+            <DialogDescription id="receipt-action-description">
+              {selectedReceipt?.action === 'approve' 
+                ? 'Bu makbuzu onayladığınızda müşteriye 30 günlük erişim verilecektir.' 
+                : 'Bu makbuzu reddetme nedeninizi belirtin.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="p-4 bg-blue-50 rounded-lg">

@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 
 export const ClientReceipts = () => {
@@ -341,9 +341,12 @@ export const ClientReceipts = () => {
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby="upload-dialog-description">
           <DialogHeader>
             <DialogTitle>Makbuz Yükle</DialogTitle>
+            <DialogDescription id="upload-dialog-description">
+              Ödeme makbuzunuzu yükleyin. Admin onayı sonrası 30 günlük erişiminiz aktifleşecektir.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
