@@ -1,7 +1,7 @@
 # Agency OS - Product Requirements Document
 
 ## Overview
-Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı, revizyon sistemi ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
+Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı, revizyon sistemi, WhatsApp bildirimleri ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
 
 ## Technical Stack
 - **Frontend:** React, Tailwind CSS, shadcn/ui
@@ -9,138 +9,155 @@ Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. M�
 - **Database:** Supabase (PostgreSQL)
 - **Authentication:** Supabase Auth with JWT
 - **Storage:** Supabase Storage
+- **Integrations:** Twilio WhatsApp, Meta OAuth
 
 ## Completed Features ✅
 
-### Phase 1: Core Infrastructure
+### Core Infrastructure
 - [x] Supabase veritabanı entegrasyonu
-- [x] SQL şeması (profiles, clients, services, receipts, videos, designs, vb.)
-- [x] RLS (Row Level Security) politikaları
+- [x] SQL şeması ve RLS politikaları
 - [x] Backend tamamen Supabase'e migrate edildi
-- [x] Supabase Auth entegrasyonu (login/signup)
-- [x] Admin kullanıcısı oluşturuldu
+- [x] Supabase Auth entegrasyonu
 
-### Phase 2: Admin Panel
-- [x] Admin Dashboard - istatistikler kartları
-- [x] Müşteri Yönetimi - CRUD operasyonları
-- [x] Hizmet Yönetimi - 6 varsayılan hizmet
-- [x] Makbuz Yönetimi - yükleme, onay/red, 30 gün erişim aktivasyonu
-- [x] Personel Yönetimi - CRUD, izin yönetimi
-- [x] Meta Ads Entegrasyonu - Token girişi, hesap bağlama
-- [x] **Revizyon Yönetimi (YENİ)** - İçerik revizyonlarını yönetme
-- [x] **Bildirim Merkezi (YENİ)** - Tüm bildirimleri görüntüleme
+### Admin Panel
+- [x] Admin Dashboard
+- [x] Müşteri Yönetimi (CRUD)
+- [x] Personel Yönetimi (CRUD + İzinler)
+- [x] Makbuz Yönetimi (Onay/Red + 30 gün erişim)
+- [x] Meta Ads Entegrasyonu (Manuel Token + OAuth)
+- [x] Revizyon Yönetimi
+- [x] Bildirim Merkezi
 
-### Phase 3: Client Portal
-- [x] Client Dashboard - erişim durumu bannerları
-- [x] Makbuz Yükleme - drag & drop
-- [x] Muhasebe Modülü - gelir/gider takibi
-- [x] Profil Düzenleme - Avatar yükleme
-- [x] **Revizyon Talebi (YENİ)** - Video/tasarım için revizyon iste
-- [x] **Bildirim Merkezi (YENİ)** - Bildirimleri görüntüleme
+### Client Portal
+- [x] Client Dashboard (erişim durumu)
+- [x] Makbuz Yükleme
+- [x] Muhasebe Modülü
+- [x] Profil Düzenleme + Avatar
+- [x] Revizyon Talebi
+- [x] Bildirim Merkezi
 
-### Phase 4: Access Control & Notifications
-- [x] **Staff İzin Sistemi (YENİ)** - 5 farklı izin türü
-- [x] **User Permissions API (YENİ)** - Frontend erişim kontrolü için
-- [x] **Geliştirilmiş Bildirim API'ları (YENİ)** - Gruplu görüntüleme, silme
+### Access Control & Permissions
+- [x] **Staff İzin Sistemi** - 5 farklı izin türü
+- [x] **Frontend Erişim Kısıtlaması** - PermissionsContext ile sayfa/buton gizleme
+- [x] **Staff Navigation Filtering** - İzinsiz menü öğeleri otomatik gizlenir
 
-### Phase 5: UX Improvements
-- [x] Mobile hamburger menü
-- [x] Dialog accessibility
-- [x] Tutarlı renk sistemi
-- [x] Tam responsive layout
+### Integrations
+- [x] **WhatsApp Bildirimleri (Twilio)** - Makbuz onay/red, erişim süresi bildirimleri
+- [x] **Meta OAuth** - Otomatik token alma, long-lived token, ad account listeleme
+- [x] **Meta Manual Token** - Manuel token girişi alternatifi
 
 ## Testing Status ✅
-- **Backend:** 100% (Tüm endpoint'ler çalışıyor)
-- **Frontend:** 100% (Tüm sayfalar doğru yükleniyor)
-- **Test raporu:** /app/test_reports/iteration_4.json
+- **Backend:** 100% (15/15 test geçti)
+- **Frontend:** 100%
+- **Test raporu:** /app/test_reports/iteration_5.json
 - **Retest gerekli:** Hayır
 
 ## API Endpoints
 
-### Auth
+### Auth & User
 - POST /auth/login
-- POST /auth/register
-- GET /auth/me
+- GET /user/permissions
 
-### Clients & Staff
-- GET/POST/PUT/DELETE /clients
-- GET/POST/PUT/DELETE /staff
-- GET/POST /staff-permissions
+### WhatsApp (Twilio)
+- GET /whatsapp/status
+- POST /whatsapp/send
+- POST /whatsapp/notify-client/{client_id}
 
-### Revisions (YENİ)
-- GET /revisions - Tüm revizyonlar
-- GET /revisions/client/{client_id} - Müşteri revizyonları
-- GET /revisions/pending/count - Bekleyen sayısı
-- POST /revisions - Yeni revizyon talebi
-- PUT /revisions/{id} - Revizyon yanıtla
-- DELETE /revisions/{id} - Revizyon sil
+### Meta OAuth
+- GET /meta/oauth/status
+- GET /meta/oauth/start/{client_id}
+- GET /meta/callback
+- POST /meta/refresh-token/{client_id}
 
-### Notifications (GELİŞTİRİLMİŞ)
-- GET /notifications/all - Tüm bildirimler
-- GET /notifications/grouped - Tarihe göre gruplu
-- GET /notifications/unread-count - Okunmamış sayısı
-- PUT /notifications/{id}/read - Okundu işaretle
-- PUT /notifications/mark-all-read - Tümünü okundu işaretle
-- DELETE /notifications/{id} - Bildirim sil
-- DELETE /notifications/clear-all - Tümünü sil
+### Other Endpoints
+- /clients, /staff, /staff-permissions
+- /receipts, /revisions, /notifications
+- /meta-accounts, /client-finance
+- /videos, /designs, /calendar-events
 
-### Permissions (YENİ)
-- GET /user/permissions - Kullanıcı yetkileri
+## Environment Variables
 
-### Other
-- GET/POST /receipts
-- GET/POST /client-finance/{client_id}
-- GET/POST /meta-accounts
-- GET/POST /videos, /designs
-- GET/POST /calendar-events
+### Backend (.env)
+```
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_KEY=
 
-## Database Schema
-Supabase Migrations:
-- `001_initial_schema.sql`
-- `002_client_finance_access.sql`
-- `003_staff_meta_profile.sql`
+# WhatsApp (Twilio)
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 
-### New Tables
-- `staff_permissions` - Personel yetkileri
-- `meta_accounts` - Meta reklam hesapları
-- `revisions` - İçerik revizyon talepleri
+# Meta OAuth
+META_APP_ID=
+META_APP_SECRET=
+META_REDIRECT_URI=https://your-domain.com/api/meta/callback
+```
 
-## New Pages
-- `/admin/revisions` - Revizyon Yönetimi
-- `/admin/notifications` - Bildirim Merkezi
-- `/client/revisions` - Revizyon Taleplerim
-- `/client/notifications` - Bildirimlerim
+### Frontend (.env)
+```
+REACT_APP_BACKEND_URL=
+REACT_APP_SUPABASE_URL=
+REACT_APP_SUPABASE_ANON_KEY=
+```
 
 ## Staff Permission Types
-1. `can_manage_clients` - Müşteri CRUD
-2. `can_manage_content` - Video/Tasarım yönetimi
-3. `can_view_reports` - Rapor görüntüleme
-4. `can_approve_receipts` - Makbuz onaylama
-5. `can_manage_calendar` - Takvim yönetimi
+| İzin | Açıklama |
+|------|----------|
+| can_manage_clients | Müşteri CRUD |
+| can_manage_content | Video/Tasarım yönetimi |
+| can_view_reports | Rapor görüntüleme |
+| can_approve_receipts | Makbuz onaylama |
+| can_manage_calendar | Takvim yönetimi |
+
+## WhatsApp Notification Types
+| Tür | Mesaj |
+|-----|-------|
+| receipt_approved | Makbuz onayı + 30 gün erişim bildirimi |
+| receipt_rejected | Makbuz red bildirimi |
+| access_expiring | 3 gün kala uyarı |
+| access_expired | Süre doldu bildirimi |
+| revision_completed | Revizyon tamamlandı |
+
+## Meta OAuth Flow
+1. Admin "OAuth ile Bağla" butonuna tıklar
+2. Müşteri seçer
+3. Facebook yetkilendirme sayfasına yönlendirilir
+4. Kullanıcı izin verir
+5. Callback URL'e dönüş
+6. Short-lived token alınır
+7. Long-lived token'a dönüştürülür (60 gün)
+8. Ad accounts listelenir
+9. Token veritabanına kaydedilir
 
 ## Login Credentials
 - **Admin:** admin@agency.com / admin123
 
 ## Backlog (P2)
-- [ ] Staff rolü için frontend erişim kısıtlaması
-- [ ] Meta Ads OAuth entegrasyonu
-- [ ] WhatsApp bildirimleri
-- [ ] E-posta bildirimleri
-- [ ] Detaylı raporlama
+- [ ] E-posta bildirimleri entegrasyonu
+- [ ] Detaylı raporlama ve analytics
+- [ ] Çoklu dil desteği
+- [ ] Otomatik token yenileme (cron job)
+- [ ] Müşteri self-registration
 
-## Revision Workflow
-1. Client içerik görüntüler (video/tasarım)
-2. Client "Revizyon Talep Et" butonuna tıklar
-3. Client mesaj yazar ve gönderir
-4. Admin revizyonlar sayfasında görür
-5. Admin yanıt yazar ve durum günceller (İşlemde/Tamamlandı/Reddedildi)
-6. Client bildirim alır ve yanıtı görür
-
-## Notification Types
-- `receipt_approved` - Makbuz onaylandı
-- `receipt_rejected` - Makbuz reddedildi
-- `receipt_uploaded` - Yeni makbuz yüklendi
-- `revision_request` - Yeni revizyon talebi
-- `revision_response` - Revizyon yanıtlandı
-- `access_expiring` - Erişim süresi doluyor
-- `access_expired` - Erişim süresi doldu
+## File Structure
+```
+/app/
+├── backend/
+│   ├── .env
+│   ├── requirements.txt
+│   └── server.py (2600+ lines)
+├── frontend/
+│   ├── .env
+│   ├── src/
+│   │   ├── contexts/
+│   │   │   └── PermissionsContext.jsx (NEW)
+│   │   ├── pages/
+│   │   │   ├── admin/ (12 pages)
+│   │   │   ├── client/ (7 pages)
+│   │   │   └── shared/ (2 pages)
+│   │   └── components/
+│   │       └── Layout.jsx (Staff permission filtering)
+└── supabase/
+    └── migrations/ (3 SQL files)
+```
