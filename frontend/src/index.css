@@ -18,28 +18,45 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.02em;
 }
 
+/* =====================================================
+   AGENCY OS - NAVY BLUE & WHITE THEME
+   Primary: Navy Blue (#0f172a, #1e3a5f, #1e40af)
+   Secondary: White (#ffffff)
+   Accent: Black (#000000)
+   ===================================================== */
+
 @layer base {
     :root {
+        /* Navy blue theme colors */
         --background: 248 250 252;
-        --foreground: 30 41 59;
+        --foreground: 15 23 42;
         --card: 255 255 255;
-        --card-foreground: 30 41 59;
+        --card-foreground: 15 23 42;
         --popover: 255 255 255;
-        --popover-foreground: 30 41 59;
-        --primary: 30 58 138;
-        --primary-foreground: 248 250 252;
+        --popover-foreground: 15 23 42;
+        --primary: 30 64 175;
+        --primary-foreground: 255 255 255;
         --secondary: 241 245 249;
-        --secondary-foreground: 30 41 59;
+        --secondary-foreground: 15 23 42;
         --muted: 241 245 249;
-        --muted-foreground: 100 116 139;
-        --accent: 59 130 246;
+        --muted-foreground: 71 85 105;
+        --accent: 30 58 138;
         --accent-foreground: 255 255 255;
-        --destructive: 239 68 68;
+        --destructive: 220 38 38;
         --destructive-foreground: 255 255 255;
-        --border: 226 232 240;
-        --input: 226 232 240;
-        --ring: 59 130 246;
-        --radius: 0.5rem;
+        --border: 203 213 225;
+        --input: 203 213 225;
+        --ring: 30 64 175;
+        --radius: 0.625rem;
+        
+        /* Navy custom colors */
+        --navy-950: 15 23 42;
+        --navy-900: 30 41 59;
+        --navy-800: 30 58 138;
+        --navy-700: 29 78 216;
+        --navy-600: 37 99 235;
+        --navy-100: 219 234 254;
+        --navy-50: 239 246 255;
     }
 }
 
@@ -48,14 +65,121 @@ h1, h2, h3, h4, h5, h6 {
         @apply border-border;
     }
     body {
-        @apply bg-slate-50 text-slate-900;
+        @apply bg-white text-slate-900;
     }
 }
 
-tbody {
+/* Force white background on tables */
+tbody, table {
     background-color: rgb(255, 255, 255) !important;
 }
 
+/* Navy theme for buttons */
+.btn-navy {
+    @apply bg-slate-900 hover:bg-slate-800 text-white;
+}
+
+.btn-navy-outline {
+    @apply border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white;
+}
+
+/* Navy cards */
+.card-navy {
+    @apply bg-white border border-slate-200 shadow-sm;
+}
+
+.card-navy-dark {
+    @apply bg-slate-900 text-white border-slate-800;
+}
+
+/* Navy gradient backgrounds */
+.bg-navy-gradient {
+    @apply bg-gradient-to-br from-slate-900 to-slate-800;
+}
+
+.bg-navy-light-gradient {
+    @apply bg-gradient-to-br from-slate-50 to-white;
+}
+
+/* Sidebar navy theme */
+.sidebar-navy {
+    @apply bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950;
+}
+
+/* Card shadows */
+.card-shadow {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
+}
+
+.card-shadow:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 2px 4px rgba(15, 23, 42, 0.08);
+}
+
+/* Stats card navy theme */
+.stats-card {
+    @apply bg-white border border-slate-200 rounded-xl p-6 transition-all duration-200;
+}
+
+.stats-card:hover {
+    @apply border-slate-300 shadow-md;
+}
+
+.stats-card-icon {
+    @apply p-3 rounded-xl bg-slate-100;
+}
+
+.stats-card-icon-navy {
+    @apply p-3 rounded-xl bg-slate-900 text-white;
+}
+
+/* Navy badge */
+.badge-navy {
+    @apply bg-slate-900 text-white text-xs font-medium px-2.5 py-1 rounded-full;
+}
+
+.badge-navy-outline {
+    @apply border border-slate-900 text-slate-900 text-xs font-medium px-2.5 py-1 rounded-full;
+}
+
+/* Success/Warning/Error badges with navy theme */
+.badge-success {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+}
+
+.badge-warning {
+    @apply bg-amber-50 text-amber-700 border border-amber-200;
+}
+
+.badge-error {
+    @apply bg-red-50 text-red-700 border border-red-200;
+}
+
+/* Navy table headers */
+.table-header-navy {
+    @apply bg-slate-50 text-slate-900 font-semibold;
+}
+
+/* Input focus states */
+input:focus, textarea:focus, select:focus {
+    @apply ring-2 ring-slate-900 ring-offset-1 border-slate-900;
+}
+
+/* Locked overlay */
+.locked-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+/* Debug wrapper */
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;
@@ -88,24 +212,27 @@ tbody {
     }
 }
 
-.card-shadow {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    transition: all 0.3s;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-.card-shadow:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
 }
 
-.locked-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    z-index: 10;
-    pointer-events: auto;
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Selection color */
+::selection {
+    background: #1e40af;
+    color: white;
 }

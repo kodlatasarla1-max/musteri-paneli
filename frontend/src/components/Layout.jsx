@@ -172,15 +172,15 @@ export const Layout = ({ role, clientId }) => {
 
   const SidebarContent = () => (
     <>
-      <div className="p-4 lg:p-6 border-b border-blue-800/50 flex items-center justify-between">
+      <div className="p-4 lg:p-6 border-b border-white/10 flex items-center justify-between">
         <div>
-          <h1 className="text-lg lg:text-xl font-semibold text-white" data-testid="sidebar-title">Ajans OS</h1>
-          <p className="text-xs text-blue-300 mt-1" data-testid="user-role">{user?.full_name || role}</p>
+          <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight" data-testid="sidebar-title">Ajans OS</h1>
+          <p className="text-xs text-slate-400 mt-1" data-testid="user-role">{user?.full_name || role}</p>
         </div>
         {isMobile && (
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="p-2 text-blue-200 hover:text-white lg:hidden"
+            className="p-2 text-slate-400 hover:text-white lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -200,16 +200,16 @@ export const Layout = ({ role, clientId }) => {
               onClick={() => handleNavClick(item.path)}
               className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-all ${
                 isActive
-                  ? 'bg-blue-800/50 text-white shadow-lg backdrop-blur-sm'
+                  ? 'bg-white/15 text-white shadow-lg backdrop-blur-sm border border-white/10'
                   : isLocked
-                  ? 'text-blue-400 hover:text-blue-300'
-                  : 'text-blue-200 hover:bg-blue-800/30 hover:text-white'
+                  ? 'text-slate-400 hover:text-slate-300'
+                  : 'text-slate-300 hover:bg-white/10 hover:text-white'
               }`}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
               <span className="flex-1 text-left truncate">{item.label}</span>
               {item.badge > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                <span className="bg-white text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
                   {item.badge}
                 </span>
               )}
@@ -219,12 +219,12 @@ export const Layout = ({ role, clientId }) => {
         })}
       </nav>
 
-      <div className="p-3 lg:p-4 border-t border-blue-800/50">
+      <div className="p-3 lg:p-4 border-t border-white/10">
         <Button
           data-testid="logout-button"
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start text-blue-200 hover:text-white hover:bg-blue-800/30 rounded-lg text-sm"
+          className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10 rounded-lg text-sm"
         >
           <LogOut className="h-5 w-5 mr-3" />
           {tr.auth.logout}
@@ -234,15 +234,15 @@ export const Layout = ({ role, clientId }) => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50" data-testid="layout-container">
+    <div className="min-h-screen bg-white" data-testid="layout-container">
       {/* Mobile Header - Always visible on mobile */}
       <header 
-        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-gradient-to-r from-blue-900 to-blue-950 z-40 flex items-center justify-between px-4 shadow-lg"
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-slate-900 z-40 flex items-center justify-between px-4 shadow-lg"
         data-testid="mobile-header"
       >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 text-white hover:bg-blue-800/50 rounded-lg transition-colors active:scale-95"
+          className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors active:scale-95"
           data-testid="mobile-menu-button"
           aria-label="Menüyü aç"
           aria-expanded={sidebarOpen}
@@ -255,16 +255,16 @@ export const Layout = ({ role, clientId }) => {
 
       {/* Mobile Sidebar Overlay */}
       <div 
-        className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity duration-300 ${
           sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setSidebarOpen(false)}
         aria-hidden="true"
       />
 
-      {/* Sidebar */}
+      {/* Sidebar - Navy Blue */}
       <aside 
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 text-blue-100 flex flex-col border-r border-blue-800/50 z-50 shadow-xl transition-transform duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-full bg-slate-900 text-white flex flex-col border-r border-slate-800 z-50 shadow-2xl transition-transform duration-300 ease-in-out
           w-72 lg:w-64
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -277,7 +277,7 @@ export const Layout = ({ role, clientId }) => {
 
       {/* Main Content */}
       <main 
-        className="min-h-screen transition-all duration-300 pt-14 lg:pt-0 lg:ml-64"
+        className="min-h-screen bg-slate-50 transition-all duration-300 pt-14 lg:pt-0 lg:ml-64"
         data-testid="main-content"
       >
         <Outlet />

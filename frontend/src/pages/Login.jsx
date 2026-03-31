@@ -62,13 +62,19 @@ export const Login = () => {
       <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <h1 className="text-5xl font-medium text-slate-900 tracking-tight" data-testid="login-title">{tr.auth.welcomeBack}</h1>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-xl">A</span>
+              </div>
+              <span className="text-2xl font-bold text-slate-900">Ajans OS</span>
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight" data-testid="login-title">{tr.auth.welcomeBack}</h1>
             <p className="mt-3 text-slate-600">{tr.auth.signInToAccount}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">{tr.auth.emailAddress}</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-slate-900">{tr.auth.emailAddress}</Label>
               <Input
                 id="email"
                 data-testid="email-input"
@@ -76,13 +82,13 @@ export const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 border-slate-200 focus:border-slate-900 focus:ring-slate-900"
+                className="h-12 border-slate-300 focus:border-slate-900 focus:ring-slate-900 bg-white"
                 placeholder="ornek@sirket.com"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">{tr.auth.password}</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-slate-900">{tr.auth.password}</Label>
               <Input
                 id="password"
                 data-testid="password-input"
@@ -90,7 +96,7 @@ export const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-12 border-slate-200 focus:border-slate-900 focus:ring-slate-900"
+                className="h-12 border-slate-300 focus:border-slate-900 focus:ring-slate-900 bg-white"
                 placeholder="••••••••"
               />
             </div>
@@ -98,7 +104,7 @@ export const Login = () => {
             <Button
               type="submit"
               data-testid="login-submit-button"
-              className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all"
+              className="w-full h-12 bg-slate-900 hover:bg-black text-white font-semibold rounded-xl transition-all shadow-lg shadow-slate-900/20"
               disabled={loading}
             >
               {loading ? tr.auth.signingIn : tr.auth.signIn}
@@ -106,24 +112,28 @@ export const Login = () => {
           </form>
 
           {/* Demo credentials hint */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-800 font-medium mb-2">Demo Giriş Bilgileri:</p>
-            <p className="text-xs text-blue-700">E-posta: admin@agency.com</p>
-            <p className="text-xs text-blue-700">Şifre: admin123</p>
+          <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p className="text-sm text-slate-900 font-semibold mb-2">Demo Giriş Bilgileri:</p>
+            <p className="text-sm text-slate-600">E-posta: <span className="font-mono text-slate-900">admin@agency.com</span></p>
+            <p className="text-sm text-slate-600">Şifre: <span className="font-mono text-slate-900">admin123</span></p>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Image */}
-      <div
-        className="hidden md:block bg-cover bg-center relative"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1553792012-5c75e251255e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjcmVhdGl2ZSUyMGFnZW5jeSUyMG1lZXRpbmclMjBtaW5pbWFsfGVufDB8fHx8MTc3MDU3NzI5NHww&ixlib=rb-4.1.0&q=85')` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 to-slate-900/40" />
-        <div className="absolute inset-0 flex items-end p-12">
-          <div className="text-white max-w-lg">
-            <h2 className="text-4xl font-medium mb-4 tracking-tight">{tr.auth.manageAgency}</h2>
-            <p className="text-slate-100 text-lg">{tr.auth.completeControl}</p>
+      {/* Right Side - Navy Blue Background */}
+      <div className="hidden md:flex bg-slate-900 relative items-center justify-center">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80" />
+        <div className="relative z-10 p-12 max-w-lg text-center">
+          <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-8 border border-white/20">
+            <span className="text-white font-bold text-4xl">A</span>
+          </div>
+          <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">{tr.auth.manageAgency}</h2>
+          <p className="text-slate-300 text-lg leading-relaxed">{tr.auth.completeControl}</p>
+          
+          <div className="mt-12 flex items-center justify-center gap-4">
+            <div className="w-3 h-3 bg-white rounded-full" />
+            <div className="w-3 h-3 bg-white/40 rounded-full" />
+            <div className="w-3 h-3 bg-white/40 rounded-full" />
           </div>
         </div>
       </div>
