@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, 
   LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell, 
-  Menu, X, ChevronRight, Wallet
+  Menu, X, ChevronRight, Wallet, User
 } from 'lucide-react';
 import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
@@ -101,6 +101,7 @@ export const Layout = ({ role, clientId }) => {
     { icon: Video, label: tr.sidebar.content, path: '/admin/content' },
     { icon: Calendar, label: tr.sidebar.calendar, path: '/admin/calendar' },
     { icon: BarChart3, label: tr.sidebar.adsReports, path: '/admin/ads-reports' },
+    { icon: Globe, label: 'Meta Entegrasyonu', path: '/admin/meta-integration' },
     { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts', badge: pendingReceiptsCount },
     { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
     { icon: Activity, label: tr.sidebar.activityLogs, path: '/admin/logs' },
@@ -116,6 +117,7 @@ export const Layout = ({ role, clientId }) => {
     { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-ticaret Yönetimi') },
     { icon: Receipt, label: 'Makbuzlarım', path: '/client/receipts', active: true },
     { icon: Wallet, label: 'Muhasebe', path: '/client/finance', active: true },
+    { icon: User, label: 'Profilim', path: '/client/profile', active: true },
   ];
 
   const staffNav = [

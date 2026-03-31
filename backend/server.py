@@ -55,7 +55,7 @@ class ClientUpdate(BaseModel):
     industry: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
-    status: Optional[str] = None
+    client_status: Optional[str] = None
 
 class ServiceToggle(BaseModel):
     client_id: str
@@ -140,6 +140,36 @@ class ClientFinanceUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     receipt_url: Optional[str] = None
+
+class StaffCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    
+class StaffUpdate(BaseModel):
+    full_name: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class StaffPermissions(BaseModel):
+    staff_id: str
+    can_manage_clients: bool = False
+    can_manage_content: bool = False
+    can_view_reports: bool = False
+    can_approve_receipts: bool = False
+    can_manage_calendar: bool = False
+
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    company_name: Optional[str] = None
+    address: Optional[str] = None
+
+class MetaAccountCreate(BaseModel):
+    client_id: str
+    meta_access_token: str
+    ad_account_id: str
+    account_name: Optional[str] = None
 
 
 # =====================================================
@@ -757,15 +787,15 @@ async def get_all_receipts(user: dict = Depends(require_admin_or_staff)):
 
 
 @api_router.get("/receipts/client/{client_id}")
-async def get_client_receipts(client_id: str, year: Optional[int] = None, month: Optional[int] = None, status: Optional[str] = None, user: dict = Depends(get_current_user)):
+async def get_client_receipts(client_id: str, year: Optional[int] = None, month: Optional[int] = None, receipt_status: Optional[str] = None, user: dict = Depends(get_current_user)):
     try:
         if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
             raise HTTPException(status_code=403, detail="Erişim reddedildi")
         
         query = supabase.table('receipts').select('*').eq('client_id', client_id)
         
-        if status:
-            query = query.eq('status', status)
+        if receipt_status:
+            query = query.eq('status', receipt_status)
         
         response = query.order('created_at', desc=True).execute()
         
@@ -1593,6 +1623,416 @@ async def get_upload_url(file_name: str, file_type: str, bucket: str = "uploads"
     except Exception as e:
         logging.error(f"Get upload URL error: {e}")
         raise HTTPException(status_code=500, detail="Upload URL oluşturulamadı")
+
+
+# =====================================================
+# STAFF MANAGEMENT
+# =====================================================
+@api_router.get("/staff")
+async def get_all_staff(user: dict = Depends(require_admin)):
+    try:
+        response = supabase.table('profiles').select('*').eq('role', 'staff').order('created_at', desc=True).execute()
+        
+        # Get permissions for each staff
+        staff_list = []
+        for staff in response.data:
+            perm_response = supabase.table('staff_permissions').select('*').eq('staff_id', staff['id']).single().execute()
+            staff_data = dict(staff)
+            staff_data['permissions'] = perm_response.data if perm_response.data else None
+            staff_list.append(staff_data)
+        
+        return staff_list
+    except Exception as e:
+        logging.error(f"Get staff error: {e}")
+        raise HTTPException(status_code=500, detail="Personel listesi yüklenemedi")
+
+
+@api_router.post("/staff")
+async def create_staff(data: StaffCreate, user: dict = Depends(require_admin)):
+    try:
+        # Create auth user
+        auth_response = supabase.auth.admin.create_user({
+            "email": data.email,
+            "password": data.password,
+            "email_confirm": True
+        })
+        
+        if not auth_response.user:
+            raise HTTPException(status_code=400, detail="Kullanıcı oluşturulamadı")
+        
+        # Create profile
+        profile_data = {
+            'id': auth_response.user.id,
+            'email': data.email,
+            'full_name': data.full_name,
+            'role': 'staff',
+            'is_active': True
+        }
+        
+        supabase.table('profiles').insert(profile_data).execute()
+        
+        # Create default permissions
+        supabase.table('staff_permissions').insert({
+            'staff_id': auth_response.user.id,
+            'can_manage_clients': False,
+            'can_manage_content': False,
+            'can_view_reports': False,
+            'can_approve_receipts': False,
+            'can_manage_calendar': False
+        }).execute()
+        
+        log_audit(user['id'], user['email'], 'create', 'staff', auth_response.user.id, after=profile_data)
+        
+        return {"id": auth_response.user.id, **profile_data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create staff error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/staff/{staff_id}")
+async def update_staff(staff_id: str, data: StaffUpdate, user: dict = Depends(require_admin)):
+    try:
+        update_data = {k: v for k, v in data.dict().items() if v is not None}
+        update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+        
+        response = supabase.table('profiles').update(update_data).eq('id', staff_id).eq('role', 'staff').execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Personel bulunamadı")
+        
+        log_audit(user['id'], user['email'], 'update', 'staff', staff_id, after=update_data)
+        
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Update staff error: {e}")
+        raise HTTPException(status_code=500, detail="Personel güncellenemedi")
+
+
+@api_router.delete("/staff/{staff_id}")
+async def delete_staff(staff_id: str, user: dict = Depends(require_admin)):
+    try:
+        # Get staff before delete
+        staff = supabase.table('profiles').select('*').eq('id', staff_id).eq('role', 'staff').single().execute()
+        
+        if not staff.data:
+            raise HTTPException(status_code=404, detail="Personel bulunamadı")
+        
+        # Delete permissions
+        supabase.table('staff_permissions').delete().eq('staff_id', staff_id).execute()
+        
+        # Delete profile
+        supabase.table('profiles').delete().eq('id', staff_id).execute()
+        
+        # Delete auth user
+        try:
+            supabase.auth.admin.delete_user(staff_id)
+        except Exception:
+            pass
+        
+        log_audit(user['id'], user['email'], 'delete', 'staff', staff_id, before=staff.data)
+        
+        return {"message": "Personel başarıyla silindi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Delete staff error: {e}")
+        raise HTTPException(status_code=500, detail="Personel silinemedi")
+
+
+@api_router.post("/staff-permissions")
+async def update_staff_permissions(data: StaffPermissions, user: dict = Depends(require_admin)):
+    try:
+        perm_data = {
+            'staff_id': data.staff_id,
+            'can_manage_clients': data.can_manage_clients,
+            'can_manage_content': data.can_manage_content,
+            'can_view_reports': data.can_view_reports,
+            'can_approve_receipts': data.can_approve_receipts,
+            'can_manage_calendar': data.can_manage_calendar,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert permissions
+        response = supabase.table('staff_permissions').upsert(perm_data, on_conflict='staff_id').execute()
+        
+        log_audit(user['id'], user['email'], 'update', 'staff_permissions', data.staff_id, after=perm_data)
+        
+        return response.data[0] if response.data else perm_data
+    except Exception as e:
+        logging.error(f"Update staff permissions error: {e}")
+        raise HTTPException(status_code=500, detail="İzinler güncellenemedi")
+
+
+@api_router.get("/staff-permissions/{staff_id}")
+async def get_staff_permissions(staff_id: str, user: dict = Depends(require_admin_or_staff)):
+    try:
+        response = supabase.table('staff_permissions').select('*').eq('staff_id', staff_id).single().execute()
+        
+        if not response.data:
+            return {
+                'staff_id': staff_id,
+                'can_manage_clients': False,
+                'can_manage_content': False,
+                'can_view_reports': False,
+                'can_approve_receipts': False,
+                'can_manage_calendar': False
+            }
+        
+        return response.data
+    except Exception as e:
+        logging.error(f"Get staff permissions error: {e}")
+        raise HTTPException(status_code=500, detail="İzinler yüklenemedi")
+
+
+# =====================================================
+# USER PROFILE
+# =====================================================
+@api_router.get("/profile")
+async def get_profile(user: dict = Depends(get_current_user)):
+    try:
+        # Get profile with client info if client
+        profile = supabase.table('profiles').select('*').eq('id', user['id']).single().execute()
+        
+        if not profile.data:
+            raise HTTPException(status_code=404, detail="Profil bulunamadı")
+        
+        result = dict(profile.data)
+        
+        # If client, get client company info
+        if profile.data.get('client_id'):
+            client = supabase.table('clients').select('company_name, contact_phone, address').eq('id', profile.data['client_id']).single().execute()
+            if client.data:
+                result['company_name'] = client.data.get('company_name')
+                result['phone'] = client.data.get('contact_phone')
+                result['address'] = client.data.get('address')
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get profile error: {e}")
+        raise HTTPException(status_code=500, detail="Profil yüklenemedi")
+
+
+@api_router.put("/profile")
+async def update_profile(data: ProfileUpdate, user: dict = Depends(get_current_user)):
+    try:
+        update_data = {}
+        
+        # Update profile fields
+        if data.full_name:
+            update_data['full_name'] = data.full_name
+        if data.avatar_url is not None:
+            update_data['avatar_url'] = data.avatar_url
+        
+        if update_data:
+            update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+            supabase.table('profiles').update(update_data).eq('id', user['id']).execute()
+        
+        # If client and has client_id, update client info too
+        if user.get('client_id') and user.get('role') == 'client':
+            client_update = {}
+            if data.phone:
+                client_update['contact_phone'] = data.phone
+            if data.address:
+                client_update['address'] = data.address
+            if data.company_name:
+                client_update['company_name'] = data.company_name
+            
+            if client_update:
+                client_update['updated_at'] = datetime.now(timezone.utc).isoformat()
+                supabase.table('clients').update(client_update).eq('id', user['client_id']).execute()
+        
+        log_audit(user['id'], user['email'], 'update', 'profile', user['id'], after={**update_data, **(data.dict() if user.get('client_id') else {})})
+        
+        # Return updated profile
+        return await get_profile(user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Update profile error: {e}")
+        raise HTTPException(status_code=500, detail="Profil güncellenemedi")
+
+
+@api_router.post("/profile/avatar")
+async def upload_avatar(user: dict = Depends(get_current_user)):
+    """Get presigned URL for avatar upload"""
+    try:
+        import uuid
+        file_name = f"avatars/{user['id']}/{uuid.uuid4()}.jpg"
+        
+        return {
+            "upload_path": file_name,
+            "bucket": "avatars"
+        }
+    except Exception as e:
+        logging.error(f"Avatar upload URL error: {e}")
+        raise HTTPException(status_code=500, detail="Avatar yükleme URL'i oluşturulamadı")
+
+
+# =====================================================
+# META ADS API INTEGRATION
+# =====================================================
+@api_router.get("/meta-accounts")
+async def get_all_meta_accounts(user: dict = Depends(require_admin_or_staff)):
+    try:
+        response = supabase.table('meta_accounts').select('*, clients(company_name)').order('created_at', desc=True).execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"Get meta accounts error: {e}")
+        raise HTTPException(status_code=500, detail="Meta hesapları yüklenemedi")
+
+
+@api_router.get("/meta-accounts/{client_id}")
+async def get_client_meta_account(client_id: str, user: dict = Depends(require_admin_or_staff)):
+    try:
+        response = supabase.table('meta_accounts').select('*').eq('client_id', client_id).single().execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"Get client meta account error: {e}")
+        return None
+
+
+@api_router.post("/meta-accounts")
+async def create_meta_account(data: MetaAccountCreate, user: dict = Depends(require_admin)):
+    try:
+        # Check if client already has a meta account
+        existing = supabase.table('meta_accounts').select('id').eq('client_id', data.client_id).execute()
+        
+        if existing.data:
+            # Update existing
+            response = supabase.table('meta_accounts').update({
+                'meta_access_token': data.meta_access_token,
+                'ad_account_id': data.ad_account_id,
+                'account_name': data.account_name,
+                'is_active': True,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }).eq('client_id', data.client_id).execute()
+        else:
+            # Create new
+            response = supabase.table('meta_accounts').insert({
+                'client_id': data.client_id,
+                'meta_access_token': data.meta_access_token,
+                'ad_account_id': data.ad_account_id,
+                'account_name': data.account_name,
+                'is_active': True
+            }).execute()
+        
+        log_audit(user['id'], user['email'], 'create', 'meta_account', data.client_id)
+        
+        return response.data[0] if response.data else {"message": "Meta hesabı kaydedildi"}
+    except Exception as e:
+        logging.error(f"Create meta account error: {e}")
+        raise HTTPException(status_code=500, detail="Meta hesabı oluşturulamadı")
+
+
+@api_router.delete("/meta-accounts/{client_id}")
+async def delete_meta_account(client_id: str, user: dict = Depends(require_admin)):
+    try:
+        supabase.table('meta_accounts').delete().eq('client_id', client_id).execute()
+        log_audit(user['id'], user['email'], 'delete', 'meta_account', client_id)
+        return {"message": "Meta hesabı silindi"}
+    except Exception as e:
+        logging.error(f"Delete meta account error: {e}")
+        raise HTTPException(status_code=500, detail="Meta hesabı silinemedi")
+
+
+@api_router.post("/meta-accounts/{client_id}/fetch-data")
+async def fetch_meta_ads_data(client_id: str, user: dict = Depends(require_admin_or_staff)):
+    """Fetch ads data from Meta API and store in database"""
+    try:
+        import requests
+        
+        # Get meta account
+        meta_account = supabase.table('meta_accounts').select('*').eq('client_id', client_id).single().execute()
+        
+        if not meta_account.data:
+            raise HTTPException(status_code=404, detail="Meta hesabı bulunamadı")
+        
+        access_token = meta_account.data['meta_access_token']
+        ad_account_id = meta_account.data['ad_account_id']
+        
+        # Format ad account ID (add act_ prefix if not present)
+        if not ad_account_id.startswith('act_'):
+            ad_account_id = f"act_{ad_account_id}"
+        
+        # Meta Graph API endpoint for insights
+        url = f"https://graph.facebook.com/v18.0/{ad_account_id}/insights"
+        
+        params = {
+            'access_token': access_token,
+            'fields': 'campaign_name,spend,impressions,clicks,actions,cpc,cpm',
+            'date_preset': 'last_7d',
+            'level': 'campaign',
+            'time_increment': 1
+        }
+        
+        response = requests.get(url, params=params, timeout=30)
+        
+        if response.status_code != 200:
+            error_data = response.json()
+            error_msg = error_data.get('error', {}).get('message', 'Meta API hatası')
+            raise HTTPException(status_code=400, detail=f"Meta API: {error_msg}")
+        
+        data = response.json()
+        insights = data.get('data', [])
+        
+        # Store insights in database
+        reports_created = 0
+        for insight in insights:
+            # Parse conversions from actions
+            conversions = 0
+            actions = insight.get('actions', [])
+            for action in actions:
+                if action.get('action_type') in ['purchase', 'lead', 'complete_registration']:
+                    conversions += int(action.get('value', 0))
+            
+            report_data = {
+                'client_id': client_id,
+                'report_date': insight.get('date_start'),
+                'campaign_name': insight.get('campaign_name', 'Unknown'),
+                'daily_spend': float(insight.get('spend', 0)),
+                'impressions': int(insight.get('impressions', 0)),
+                'clicks': int(insight.get('clicks', 0)),
+                'conversions': conversions,
+                'cpc': float(insight.get('cpc', 0)),
+                'cpm': float(insight.get('cpm', 0)),
+                'source': 'meta_api'
+            }
+            
+            # Upsert to avoid duplicates
+            supabase.table('ad_reports').upsert(
+                report_data, 
+                on_conflict='client_id,report_date,campaign_name'
+            ).execute()
+            reports_created += 1
+        
+        # Update last sync time
+        supabase.table('meta_accounts').update({
+            'last_sync': datetime.now(timezone.utc).isoformat()
+        }).eq('client_id', client_id).execute()
+        
+        log_audit(user['id'], user['email'], 'sync', 'meta_ads', client_id, after={'reports_synced': reports_created})
+        
+        return {
+            "message": f"{reports_created} rapor senkronize edildi",
+            "reports_synced": reports_created,
+            "last_sync": datetime.now(timezone.utc).isoformat()
+        }
+    except HTTPException:
+        raise
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Meta API zaman aşımı")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Meta API request error: {e}")
+        raise HTTPException(status_code=500, detail="Meta API bağlantı hatası")
+    except Exception as e:
+        logging.error(f"Fetch meta ads data error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =====================================================

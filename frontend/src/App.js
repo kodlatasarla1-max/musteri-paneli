@@ -10,6 +10,7 @@ import { ClientVideos } from "./pages/client/ClientVideos";
 import { ClientDesigns } from "./pages/client/ClientDesigns";
 import { ClientReceipts } from "./pages/client/ClientReceipts";
 import { ClientFinance } from "./pages/client/ClientFinance";
+import { ClientProfile } from "./pages/client/ClientProfile";
 import { LockedService } from "./pages/client/LockedService";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
@@ -17,6 +18,7 @@ import { AdminStaff } from "./pages/admin/AdminStaff";
 import { AdminContent } from "./pages/admin/AdminContent";
 import { AdminCalendar } from "./pages/admin/AdminCalendar";
 import { AdminAdsReports } from "./pages/admin/AdminAdsReports";
+import { AdminMetaIntegration } from "./pages/admin/AdminMetaIntegration";
 import { AdminReceipts } from "./pages/admin/AdminReceipts";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
 import { AdminLogs } from "./pages/admin/AdminLogs";
@@ -57,6 +59,7 @@ function App() {
             <Route path="designs" element={<ClientDesigns />} />
             <Route path="receipts" element={<ClientReceipts />} />
             <Route path="finance" element={<ClientFinance />} />
+            <Route path="profile" element={<ClientProfile />} />
             <Route
               path="social-media"
               element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}
@@ -90,6 +93,7 @@ function App() {
             <Route path="content" element={<AdminContent />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="ads-reports" element={<AdminAdsReports />} />
+            <Route path="meta-integration" element={<AdminMetaIntegration />} />
             <Route path="receipts" element={<AdminReceipts />} />
             <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="logs" element={<AdminLogs />} />
