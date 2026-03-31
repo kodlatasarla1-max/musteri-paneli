@@ -18,6 +18,7 @@ export const Layout = ({ role, clientId }) => {
   const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [staffPermissions, setStaffPermissions] = useState(null);
 
   // Use CSS media queries instead of JS state for reliable responsive behavior
   const getIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 1024;
@@ -47,6 +48,10 @@ export const Layout = ({ role, clientId }) => {
     }
     if (role === 'admin' || role === 'staff') {
       loadPendingReceiptsCount();
+      loadUnreadNotifications();
+    }
+    if (role === 'staff') {
+      loadStaffPermissions();
     }
   }, [role, clientId]);
 
@@ -89,6 +94,22 @@ export const Layout = ({ role, clientId }) => {
     }
   };
 
+  const loadStaffPermissions = async () => {
+    try {
+      const response = await apiClient.get('/user/permissions');
+      setStaffPermissions(response.data?.permissions || {});
+    } catch (error) {
+      console.error('Error loading staff permissions:', error);
+      setStaffPermissions({});
+    }
+  };
+
+  const hasStaffPermission = (permission) => {
+    if (role === 'admin') return true;
+    if (role !== 'staff' || !staffPermissions) return false;
+    return staffPermissions[permission] === true;
+  };
+
   const isServiceActive = (serviceName) => {
     const service = clientServices.find(cs => cs.service_name === serviceName);
     return service ? service.is_active : false;
@@ -124,12 +145,17 @@ export const Layout = ({ role, clientId }) => {
     { icon: Bell, label: 'Bildirimler', path: '/client/notifications', active: true, badge: unreadNotifications },
   ];
 
+  // Staff navigation with permission-based visibility
   const staffNav = [
-    { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/staff/dashboard' },
-    { icon: Users, label: tr.sidebar.clients, path: '/staff/clients' },
-    { icon: Video, label: tr.sidebar.content, path: '/staff/content' },
-    { icon: Calendar, label: tr.sidebar.calendar, path: '/staff/calendar' },
-  ];
+    { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/staff/dashboard', visible: true },
+    { icon: Users, label: tr.sidebar.clients, path: '/staff/clients', visible: hasStaffPermission('can_manage_clients') },
+    { icon: Video, label: tr.sidebar.content, path: '/staff/content', visible: hasStaffPermission('can_manage_content') },
+    { icon: Calendar, label: tr.sidebar.calendar, path: '/staff/calendar', visible: hasStaffPermission('can_manage_calendar') },
+    { icon: Receipt, label: tr.sidebar.receipts, path: '/staff/receipts', visible: hasStaffPermission('can_approve_receipts'), badge: pendingReceiptsCount },
+    { icon: MessageSquare, label: 'Revizyonlar', path: '/staff/revisions', visible: hasStaffPermission('can_manage_content') },
+    { icon: BarChart3, label: tr.sidebar.adsReports, path: '/staff/ads-reports', visible: hasStaffPermission('can_view_reports') },
+    { icon: Bell, label: 'Bildirimler', path: '/staff/notifications', visible: true, badge: unreadNotifications },
+  ].filter(item => item.visible);
 
   const navItems = role === 'admin' ? adminNav : role === 'staff' ? staffNav : clientNav;
 

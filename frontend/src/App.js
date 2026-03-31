@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Login } from "./pages/Login";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
+import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { ClientDashboard } from "./pages/client/ClientDashboard";
 import { ClientVideos } from "./pages/client/ClientVideos";
 import { ClientDesigns } from "./pages/client/ClientDesigns";
@@ -25,6 +26,7 @@ import { AdminRevisions } from "./pages/admin/AdminRevisions";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
 import { AdminLogs } from "./pages/admin/AdminLogs";
 import { NotificationCenter } from "./pages/shared/NotificationCenter";
+import { NoPermission } from "./pages/shared/NoPermission";
 import { getUser } from "./utils/auth";
 import { tr } from "./utils/translations";
 
@@ -35,18 +37,19 @@ function App() {
     <div className="App">
       <Toaster position="top-right" />
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route
-            path="/"
-            element={
-              user?.role === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
-              user?.role === 'staff' ? <Navigate to="/staff/dashboard" replace /> :
-              user?.role === 'client' ? <Navigate to="/client/dashboard" replace /> :
-              <Navigate to="/login" replace />
-            }
-          />
+        <PermissionsProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route
+              path="/"
+              element={
+                user?.role === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
+                user?.role === 'staff' ? <Navigate to="/staff/dashboard" replace /> :
+                user?.role === 'client' ? <Navigate to="/client/dashboard" replace /> :
+                <Navigate to="/login" replace />
+              }
+            />
 
           {/* Client Routes */}
           <Route
@@ -106,7 +109,7 @@ function App() {
             <Route path="notifications" element={<NotificationCenter userRole="admin" />} />
           </Route>
 
-          {/* Staff Routes */}
+          {/* Staff Routes - Permission-based access */}
           <Route
             path="/staff"
             element={
@@ -115,12 +118,18 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="dashboard" element={<div className="p-8"><h1 className="text-3xl font-medium text-slate-900 mb-4">Personel Paneli</h1><p className="text-slate-600">Personel gösterge paneli yakında eklenecek...</p></div>} />
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="clients" element={<AdminClients />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="calendar" element={<AdminCalendar />} />
+            <Route path="receipts" element={<AdminReceipts />} />
+            <Route path="revisions" element={<AdminRevisions />} />
+            <Route path="ads-reports" element={<AdminAdsReports />} />
+            <Route path="notifications" element={<NotificationCenter userRole="staff" />} />
+            <Route path="no-permission" element={<NoPermission />} />
           </Route>
         </Routes>
+        </PermissionsProvider>
       </BrowserRouter>
     </div>
   );

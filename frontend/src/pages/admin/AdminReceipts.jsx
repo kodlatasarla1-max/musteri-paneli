@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, FileText, MessageCircle } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
+import { Checkbox } from '../../components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -30,10 +31,22 @@ export const AdminReceipts = () => {
   const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState(null);
 
   useEffect(() => {
     loadData();
+    checkWhatsAppStatus();
   }, []);
+
+  const checkWhatsAppStatus = async () => {
+    try {
+      const response = await apiClient.get('/whatsapp/status');
+      setWhatsappStatus(response.data);
+    } catch (error) {
+      setWhatsappStatus({ configured: false });
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -55,9 +68,24 @@ export const AdminReceipts = () => {
         admin_note: adminNotes 
       });
       
-      toast.success(approve ? 'Makbuz onaylandı ve erişim aktifleştirildi' : 'Makbuz reddedildi');
+      // Send WhatsApp notification if enabled
+      if (sendWhatsApp && selectedReceipt?.client_id) {
+        try {
+          const notifType = approve ? 'receipt_approved' : 'receipt_rejected';
+          await apiClient.post(`/whatsapp/notify-client/${selectedReceipt.client_id}?notification_type=${notifType}`);
+          toast.success(`Makbuz ${approve ? 'onaylandı' : 'reddedildi'} ve WhatsApp bildirimi gönderildi`);
+        } catch (whatsappError) {
+          console.error('WhatsApp error:', whatsappError);
+          toast.success(approve ? 'Makbuz onaylandı' : 'Makbuz reddedildi');
+          toast.warning('WhatsApp bildirimi gönderilemedi');
+        }
+      } else {
+        toast.success(approve ? 'Makbuz onaylandı ve erişim aktifleştirildi' : 'Makbuz reddedildi');
+      }
+      
       setSelectedReceipt(null);
       setAdminNotes('');
+      setSendWhatsApp(false);
       loadData();
     } catch (error) {
       toast.error('İşlem başarısız');
@@ -239,7 +267,7 @@ export const AdminReceipts = () => {
           <div className="space-y-4 py-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-slate-900 mb-2">Müşteri: {selectedReceipt?.client_name}</p>
-              <p className="text-sm text-slate-600">Tutar: ₺{selectedReceipt?.amount.toFixed(2)}</p>
+              <p className="text-sm text-slate-600">Tutar: ₺{selectedReceipt?.amount?.toFixed(2)}</p>
             </div>
 
             {selectedReceipt?.action === 'approve' && (
@@ -265,6 +293,21 @@ export const AdminReceipts = () => {
                 data-testid="admin-notes-textarea"
               />
             </div>
+            
+            {/* WhatsApp Notification Option */}
+            {whatsappStatus?.configured && (
+              <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <Checkbox
+                  id="send_whatsapp"
+                  checked={sendWhatsApp}
+                  onCheckedChange={setSendWhatsApp}
+                />
+                <Label htmlFor="send_whatsapp" className="flex items-center gap-2 cursor-pointer">
+                  <MessageCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Müşteriye WhatsApp bildirimi gönder</span>
+                </Label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedReceipt(null)}>

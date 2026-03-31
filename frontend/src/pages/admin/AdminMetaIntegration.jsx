@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Link2, RefreshCw, Trash2, ExternalLink, CheckCircle, AlertCircle, Settings } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Plus, Link2, RefreshCw, Trash2, ExternalLink, CheckCircle, AlertCircle, Settings, Zap, Key } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
@@ -30,17 +31,23 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { tr } from '../../utils/translations';
 
 export const AdminMetaIntegration = () => {
+  const [searchParams] = useSearchParams();
   const [clients, setClients] = useState([]);
   const [metaAccounts, setMetaAccounts] = useState([]);
+  const [oauthStatus, setOauthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
+  const [showOAuthDialog, setShowOAuthDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [syncingClient, setSyncingClient] = useState(null);
+  const [refreshingClient, setRefreshingClient] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [selectedClientForOAuth, setSelectedClientForOAuth] = useState('');
   
   const [formData, setFormData] = useState({
     client_id: '',
@@ -51,17 +58,30 @@ export const AdminMetaIntegration = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+    
+    // Check for OAuth callback result
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    const accounts = searchParams.get('accounts');
+    
+    if (success === 'true') {
+      toast.success(`Meta hesabı başarıyla bağlandı! ${accounts ? `${accounts} reklam hesabı bulundu.` : ''}`);
+    } else if (error) {
+      toast.error(`OAuth hatası: ${error}`);
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [clientsRes, accountsRes] = await Promise.all([
+      const [clientsRes, accountsRes, statusRes] = await Promise.all([
         apiClient.get('/clients'),
-        apiClient.get('/meta-accounts')
+        apiClient.get('/meta-accounts'),
+        apiClient.get('/meta/oauth/status').catch(() => ({ data: { configured: false } }))
       ]);
       setClients(clientsRes.data);
       setMetaAccounts(accountsRes.data);
+      setOauthStatus(statusRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Veriler yüklenemedi');
@@ -100,6 +120,37 @@ export const AdminMetaIntegration = () => {
       toast.error(message);
     } finally {
       setSyncingClient(null);
+    }
+  };
+
+  const handleRefreshToken = async (clientId) => {
+    setRefreshingClient(clientId);
+    
+    try {
+      const response = await apiClient.post(`/meta/refresh-token/${clientId}`);
+      toast.success(response.data.message || 'Token yenilendi');
+      loadData();
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Token yenilenemedi';
+      toast.error(message);
+    } finally {
+      setRefreshingClient(null);
+    }
+  };
+
+  const handleStartOAuth = async () => {
+    if (!selectedClientForOAuth) {
+      toast.error('Lütfen bir müşteri seçin');
+      return;
+    }
+    
+    try {
+      const response = await apiClient.get(`/meta/oauth/start/${selectedClientForOAuth}`);
+      // Redirect to Meta authorization URL
+      window.location.href = response.data.authorization_url;
+    } catch (error) {
+      const message = error.response?.data?.detail || 'OAuth başlatılamadı';
+      toast.error(message);
     }
   };
 
@@ -162,19 +213,58 @@ export const AdminMetaIntegration = () => {
             Müşterilerin Meta (Facebook/Instagram) reklam hesaplarını bağlayın
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setShowDialog(true);
-          }} 
-          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" 
-          data-testid="connect-meta-button"
-          disabled={getUnconnectedClients().length === 0}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Hesap Bağla
-        </Button>
+        <div className="flex gap-2">
+          {oauthStatus?.configured && (
+            <Button 
+              onClick={() => setShowOAuthDialog(true)} 
+              className="bg-indigo-600 hover:bg-indigo-700" 
+              data-testid="oauth-connect-button"
+              disabled={getUnconnectedClients().length === 0}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              OAuth ile Bağla
+            </Button>
+          )}
+          <Button 
+            onClick={() => {
+              resetForm();
+              setShowDialog(true);
+            }} 
+            variant={oauthStatus?.configured ? "outline" : "default"}
+            className={oauthStatus?.configured ? "border-blue-200 text-blue-600 hover:bg-blue-50" : "bg-blue-600 hover:bg-blue-700"} 
+            data-testid="connect-meta-button"
+            disabled={getUnconnectedClients().length === 0}
+          >
+            <Key className="h-4 w-4 mr-2" />
+            Manuel Token
+          </Button>
+        </div>
       </div>
+
+      {/* OAuth Status Banner */}
+      {oauthStatus && (
+        <Card className={`mb-6 p-4 ${oauthStatus.configured ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center gap-3">
+            {oauthStatus.configured ? (
+              <>
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-900">OAuth Yapılandırıldı</p>
+                  <p className="text-sm text-green-700">Meta App ID: {oauthStatus.app_id}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-900">OAuth Yapılandırılmadı</p>
+                  <p className="text-sm text-amber-700">META_APP_ID ve META_APP_SECRET .env dosyasına ekleyin</p>
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -442,6 +532,63 @@ export const AdminMetaIntegration = () => {
               disabled={submitting}
             >
               {submitting ? 'Siliniyor...' : 'Sil'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OAuth Connect Dialog */}
+      <Dialog open={showOAuthDialog} onOpenChange={setShowOAuthDialog}>
+        <DialogContent aria-describedby="oauth-dialog-desc">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-indigo-600" />
+              Meta OAuth ile Bağlan
+            </DialogTitle>
+            <DialogDescription id="oauth-dialog-desc">
+              Facebook hesabınızla giriş yaparak reklam hesaplarınıza otomatik erişim sağlayın.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Müşteri Seçin</Label>
+              <Select value={selectedClientForOAuth} onValueChange={setSelectedClientForOAuth}>
+                <SelectTrigger className="border-indigo-200">
+                  <SelectValue placeholder="Müşteri seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getUnconnectedClients().map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.company_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="p-4 bg-indigo-50 rounded-lg">
+              <h4 className="font-medium text-indigo-900 mb-2">OAuth Avantajları</h4>
+              <ul className="text-sm text-indigo-700 space-y-1">
+                <li>• Token manuel girmek yerine otomatik alınır</li>
+                <li>• 60 gün geçerli long-lived token</li>
+                <li>• Tüm reklam hesapları otomatik listelenir</li>
+                <li>• Daha güvenli (şifre paylaşımı yok)</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setShowOAuthDialog(false)}>
+              İptal
+            </Button>
+            <Button 
+              onClick={handleStartOAuth}
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={!selectedClientForOAuth}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Facebook'a Git
             </Button>
           </DialogFooter>
         </DialogContent>

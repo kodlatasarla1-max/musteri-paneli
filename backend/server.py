@@ -1,9 +1,13 @@
-from fastapi import FastAPI, APIRouter, HTTPException, status, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, status, Depends, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
+import secrets
+import httpx
+from urllib.parse import urlencode
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
@@ -18,9 +22,22 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 
+# Twilio WhatsApp Config
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+
+# Meta OAuth Config
+META_APP_ID = os.environ.get('META_APP_ID')
+META_APP_SECRET = os.environ.get('META_APP_SECRET')
+META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI', 'http://localhost:8001/api/meta/callback')
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-app = FastAPI(title="Agency OS API", version="2.1.0")
+# OAuth state storage (in production, use Redis)
+oauth_state_storage = {}
+
+app = FastAPI(title="Agency OS API", version="2.2.0")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
@@ -2348,6 +2365,333 @@ async def get_user_permissions(user: dict = Depends(get_current_user)):
     except Exception as e:
         logging.error(f"Get user permissions error: {e}")
         return {'role': user.get('role'), 'permissions': {}}
+
+
+# =====================================================
+# WHATSAPP NOTIFICATIONS (Twilio)
+# =====================================================
+class WhatsAppMessage(BaseModel):
+    to_phone: str  # E.164 format: +905551234567
+    message: str
+
+class WhatsAppTemplate(BaseModel):
+    to_phone: str
+    template_name: str
+    template_vars: Optional[dict] = None
+
+
+def send_whatsapp_message(to_phone: str, message: str) -> dict:
+    """Send WhatsApp message via Twilio"""
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+        logging.warning("Twilio credentials not configured")
+        return {"status": "skipped", "reason": "Twilio not configured"}
+    
+    try:
+        from twilio.rest import Client
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        
+        # Format phone number for WhatsApp
+        whatsapp_to = f"whatsapp:{to_phone}" if not to_phone.startswith('whatsapp:') else to_phone
+        
+        twilio_message = client.messages.create(
+            body=message,
+            from_=TWILIO_WHATSAPP_FROM,
+            to=whatsapp_to
+        )
+        
+        logging.info(f"WhatsApp sent to {to_phone}: {twilio_message.sid}")
+        return {"status": "sent", "sid": twilio_message.sid}
+    except Exception as e:
+        logging.error(f"WhatsApp send error: {e}")
+        return {"status": "failed", "error": str(e)}
+
+
+@api_router.post("/whatsapp/send")
+async def send_whatsapp(data: WhatsAppMessage, user: dict = Depends(require_admin_or_staff)):
+    """Send a WhatsApp message to a phone number"""
+    result = send_whatsapp_message(data.to_phone, data.message)
+    
+    if result["status"] == "failed":
+        raise HTTPException(status_code=500, detail=result.get("error", "Mesaj gönderilemedi"))
+    
+    log_audit(user['id'], user['email'], 'send', 'whatsapp', data.to_phone)
+    return result
+
+
+@api_router.post("/whatsapp/notify-client/{client_id}")
+async def notify_client_whatsapp(
+    client_id: str, 
+    notification_type: str = Query(..., description="receipt_approved, receipt_rejected, access_expiring"),
+    user: dict = Depends(require_admin_or_staff)
+):
+    """Send notification to client via WhatsApp"""
+    try:
+        # Get client info
+        client = supabase.table('clients').select('company_name, contact_phone').eq('id', client_id).single().execute()
+        
+        if not client.data or not client.data.get('contact_phone'):
+            raise HTTPException(status_code=400, detail="Müşteri telefon numarası bulunamadı")
+        
+        phone = client.data['contact_phone']
+        company_name = client.data['company_name']
+        
+        # Prepare message based on notification type
+        messages = {
+            'receipt_approved': f"🎉 Merhaba {company_name}! Makbuzunuz onaylandı ve 30 günlük erişiminiz aktifleştirildi. Ajans OS'e giriş yaparak hizmetlerinize ulaşabilirsiniz.",
+            'receipt_rejected': f"⚠️ Merhaba {company_name}, yüklediğiniz makbuz reddedildi. Lütfen geçerli bir makbuz yükleyiniz veya bizimle iletişime geçiniz.",
+            'access_expiring': f"⏰ Merhaba {company_name}! Ajans OS erişim süreniz 3 gün içinde dolacak. Kesintisiz hizmet için lütfen ödeme yapınız.",
+            'access_expired': f"🔒 Merhaba {company_name}, Ajans OS erişim süreniz doldu. Hizmetlerinize devam etmek için lütfen ödeme yapınız.",
+            'revision_completed': f"✅ Merhaba {company_name}! İstediğiniz revizyon tamamlandı. Ajans OS'e giriş yaparak inceleyebilirsiniz."
+        }
+        
+        message = messages.get(notification_type)
+        if not message:
+            raise HTTPException(status_code=400, detail="Geçersiz bildirim türü")
+        
+        result = send_whatsapp_message(phone, message)
+        
+        if result["status"] == "failed":
+            raise HTTPException(status_code=500, detail=result.get("error", "Mesaj gönderilemedi"))
+        
+        log_audit(user['id'], user['email'], 'notify', 'whatsapp', client_id, after={'type': notification_type})
+        
+        return {"message": "WhatsApp bildirimi gönderildi", **result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"WhatsApp notify client error: {e}")
+        raise HTTPException(status_code=500, detail="Bildirim gönderilemedi")
+
+
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_status(user: dict = Depends(require_admin)):
+    """Check WhatsApp integration status"""
+    is_configured = bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN)
+    return {
+        "configured": is_configured,
+        "from_number": TWILIO_WHATSAPP_FROM if is_configured else None
+    }
+
+
+# =====================================================
+# META OAUTH INTEGRATION
+# =====================================================
+@api_router.get("/meta/oauth/start/{client_id}")
+async def start_meta_oauth(client_id: str, user: dict = Depends(require_admin)):
+    """Start Meta OAuth flow for a client"""
+    if not META_APP_ID:
+        raise HTTPException(status_code=500, detail="Meta App ID yapılandırılmamış")
+    
+    # Generate state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    oauth_state_storage[state] = {
+        "client_id": client_id,
+        "user_id": user['id'],
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    # Build authorization URL
+    params = {
+        "client_id": META_APP_ID,
+        "redirect_uri": META_REDIRECT_URI,
+        "scope": "ads_read,ads_management",
+        "state": state,
+        "response_type": "code"
+    }
+    
+    authorization_url = f"https://www.facebook.com/v20.0/dialog/oauth?{urlencode(params)}"
+    
+    return {
+        "authorization_url": authorization_url,
+        "state": state
+    }
+
+
+@api_router.get("/meta/callback")
+async def meta_oauth_callback(
+    code: str = None, 
+    state: str = None, 
+    error: str = None,
+    error_description: str = None
+):
+    """Handle Meta OAuth callback"""
+    if error:
+        logging.error(f"Meta OAuth error: {error} - {error_description}")
+        return RedirectResponse(url=f"/admin/meta-integration?error={error}")
+    
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Eksik parametreler")
+    
+    # Verify state
+    if state not in oauth_state_storage:
+        raise HTTPException(status_code=400, detail="Geçersiz state parametresi")
+    
+    state_data = oauth_state_storage[state]
+    
+    # Check state expiration (10 minutes)
+    if (datetime.now(timezone.utc) - state_data["created_at"]).seconds > 600:
+        del oauth_state_storage[state]
+        raise HTTPException(status_code=400, detail="State süresi doldu")
+    
+    client_id = state_data["client_id"]
+    
+    try:
+        # Exchange code for short-lived token
+        async with httpx.AsyncClient() as http_client:
+            token_response = await http_client.get(
+                "https://graph.facebook.com/v20.0/oauth/access_token",
+                params={
+                    "client_id": META_APP_ID,
+                    "client_secret": META_APP_SECRET,
+                    "redirect_uri": META_REDIRECT_URI,
+                    "code": code
+                }
+            )
+        
+        if token_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Token alınamadı")
+        
+        token_data = token_response.json()
+        
+        if "error" in token_data:
+            raise HTTPException(status_code=400, detail=token_data.get("error_description", "Token hatası"))
+        
+        short_lived_token = token_data.get("access_token")
+        
+        # Exchange for long-lived token
+        async with httpx.AsyncClient() as http_client:
+            long_lived_response = await http_client.get(
+                "https://graph.facebook.com/v20.0/oauth/access_token",
+                params={
+                    "grant_type": "fb_exchange_token",
+                    "client_id": META_APP_ID,
+                    "client_secret": META_APP_SECRET,
+                    "fb_exchange_token": short_lived_token
+                }
+            )
+        
+        if long_lived_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Long-lived token alınamadı")
+        
+        long_lived_data = long_lived_response.json()
+        long_lived_token = long_lived_data.get("access_token")
+        expires_in = long_lived_data.get("expires_in", 5184000)  # 60 days default
+        
+        # Get user's ad accounts
+        async with httpx.AsyncClient() as http_client:
+            accounts_response = await http_client.get(
+                "https://graph.facebook.com/v20.0/me/adaccounts",
+                params={
+                    "access_token": long_lived_token,
+                    "fields": "id,name,account_status"
+                }
+            )
+        
+        ad_accounts = []
+        if accounts_response.status_code == 200:
+            accounts_data = accounts_response.json()
+            ad_accounts = accounts_data.get("data", [])
+        
+        # Save token to database
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+        
+        # Check if meta_account exists for this client
+        existing = supabase.table('meta_accounts').select('id').eq('client_id', client_id).execute()
+        
+        if existing.data:
+            supabase.table('meta_accounts').update({
+                'meta_access_token': long_lived_token,
+                'token_expires_at': token_expires_at.isoformat(),
+                'is_active': True,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }).eq('client_id', client_id).execute()
+        else:
+            # Get first ad account if available
+            first_account = ad_accounts[0] if ad_accounts else {}
+            supabase.table('meta_accounts').insert({
+                'client_id': client_id,
+                'meta_access_token': long_lived_token,
+                'ad_account_id': first_account.get('id', '').replace('act_', ''),
+                'account_name': first_account.get('name', 'OAuth Connected'),
+                'is_active': True
+            }).execute()
+        
+        # Clean up state
+        del oauth_state_storage[state]
+        
+        # Redirect to admin panel with success
+        return RedirectResponse(url=f"/admin/meta-integration?success=true&accounts={len(ad_accounts)}")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Meta OAuth callback error: {e}")
+        return RedirectResponse(url=f"/admin/meta-integration?error=callback_failed")
+
+
+@api_router.get("/meta/oauth/status")
+async def get_meta_oauth_status(user: dict = Depends(require_admin)):
+    """Check Meta OAuth configuration status"""
+    return {
+        "configured": bool(META_APP_ID and META_APP_SECRET),
+        "app_id": META_APP_ID[:10] + "..." if META_APP_ID else None,
+        "redirect_uri": META_REDIRECT_URI
+    }
+
+
+@api_router.post("/meta/refresh-token/{client_id}")
+async def refresh_meta_token(client_id: str, user: dict = Depends(require_admin_or_staff)):
+    """Refresh Meta access token for a client"""
+    try:
+        # Get current token
+        meta_account = supabase.table('meta_accounts').select('*').eq('client_id', client_id).single().execute()
+        
+        if not meta_account.data:
+            raise HTTPException(status_code=404, detail="Meta hesabı bulunamadı")
+        
+        current_token = meta_account.data['meta_access_token']
+        
+        # Exchange for new long-lived token
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(
+                "https://graph.facebook.com/v20.0/oauth/access_token",
+                params={
+                    "grant_type": "fb_exchange_token",
+                    "client_id": META_APP_ID,
+                    "client_secret": META_APP_SECRET,
+                    "fb_exchange_token": current_token
+                }
+            )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Token yenilenemedi")
+        
+        token_data = response.json()
+        
+        if "error" in token_data:
+            raise HTTPException(status_code=400, detail=token_data.get("error_description", "Token yenileme hatası"))
+        
+        new_token = token_data.get("access_token")
+        expires_in = token_data.get("expires_in", 5184000)
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+        
+        # Update in database
+        supabase.table('meta_accounts').update({
+            'meta_access_token': new_token,
+            'token_expires_at': token_expires_at.isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).eq('client_id', client_id).execute()
+        
+        return {
+            "message": "Token başarıyla yenilendi",
+            "expires_in": expires_in,
+            "expires_at": token_expires_at.isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Meta token refresh error: {e}")
+        raise HTTPException(status_code=500, detail="Token yenilenemedi")
 
 
 # =====================================================
