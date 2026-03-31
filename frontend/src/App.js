@@ -11,6 +11,7 @@ import { ClientDesigns } from "./pages/client/ClientDesigns";
 import { ClientReceipts } from "./pages/client/ClientReceipts";
 import { ClientFinance } from "./pages/client/ClientFinance";
 import { ClientProfile } from "./pages/client/ClientProfile";
+import { ClientRevisions } from "./pages/client/ClientRevisions";
 import { LockedService } from "./pages/client/LockedService";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
@@ -20,8 +21,10 @@ import { AdminCalendar } from "./pages/admin/AdminCalendar";
 import { AdminAdsReports } from "./pages/admin/AdminAdsReports";
 import { AdminMetaIntegration } from "./pages/admin/AdminMetaIntegration";
 import { AdminReceipts } from "./pages/admin/AdminReceipts";
+import { AdminRevisions } from "./pages/admin/AdminRevisions";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
 import { AdminLogs } from "./pages/admin/AdminLogs";
+import { NotificationCenter } from "./pages/shared/NotificationCenter";
 import { getUser } from "./utils/auth";
 import { tr } from "./utils/translations";
 
@@ -60,6 +63,8 @@ function App() {
             <Route path="receipts" element={<ClientReceipts />} />
             <Route path="finance" element={<ClientFinance />} />
             <Route path="profile" element={<ClientProfile />} />
+            <Route path="revisions" element={<ClientRevisions />} />
+            <Route path="notifications" element={<NotificationCenter userRole="client" />} />
             <Route
               path="social-media"
               element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}
@@ -95,8 +100,10 @@ function App() {
             <Route path="ads-reports" element={<AdminAdsReports />} />
             <Route path="meta-integration" element={<AdminMetaIntegration />} />
             <Route path="receipts" element={<AdminReceipts />} />
+            <Route path="revisions" element={<AdminRevisions />} />
             <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="logs" element={<AdminLogs />} />
+            <Route path="notifications" element={<NotificationCenter userRole="admin" />} />
           </Route>
 
           {/* Staff Routes */}

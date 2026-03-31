@@ -210,6 +210,57 @@ async def require_client(user: dict = Depends(get_current_user)):
     return user
 
 
+def get_staff_permissions(staff_id: str) -> dict:
+    """Get staff permissions from database"""
+    try:
+        response = supabase.table('staff_permissions').select('*').eq('staff_id', staff_id).single().execute()
+        if response.data:
+            return response.data
+        return {
+            'can_manage_clients': False,
+            'can_manage_content': False,
+            'can_view_reports': False,
+            'can_approve_receipts': False,
+            'can_manage_calendar': False
+        }
+    except Exception:
+        return {
+            'can_manage_clients': False,
+            'can_manage_content': False,
+            'can_view_reports': False,
+            'can_approve_receipts': False,
+            'can_manage_calendar': False
+        }
+
+
+async def require_permission(permission: str):
+    """Factory function to create permission checker"""
+    async def check_permission(user: dict = Depends(get_current_user)):
+        # Admin has all permissions
+        if user.get('role') == 'admin':
+            return user
+        
+        # Staff needs specific permission
+        if user.get('role') == 'staff':
+            perms = get_staff_permissions(user['id'])
+            if perms.get(permission, False):
+                return user
+            raise HTTPException(status_code=403, detail=f"Bu işlem için yetkiniz yok: {permission}")
+        
+        raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
+    return check_permission
+
+
+class RevisionCreate(BaseModel):
+    content_type: str  # 'video' or 'design'
+    content_id: str
+    message: str
+
+class RevisionResponse(BaseModel):
+    admin_response: str
+    status: str  # 'in_progress', 'resolved', 'rejected'
+
+
 # =====================================================
 # AUDIT & NOTIFICATION HELPERS
 # =====================================================
@@ -2033,6 +2084,270 @@ async def fetch_meta_ads_data(client_id: str, user: dict = Depends(require_admin
     except Exception as e:
         logging.error(f"Fetch meta ads data error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =====================================================
+# REVISIONS SYSTEM
+# =====================================================
+@api_router.get("/revisions")
+async def get_all_revisions(status: Optional[str] = None, user: dict = Depends(require_admin_or_staff)):
+    try:
+        query = supabase.table('revisions').select('*, clients(company_name), profiles!revisions_requested_by_fkey(full_name, email)')
+        
+        if status:
+            query = query.eq('status', status)
+        
+        response = query.order('created_at', desc=True).execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"Get revisions error: {e}")
+        raise HTTPException(status_code=500, detail="Revizyonlar yüklenemedi")
+
+
+@api_router.get("/revisions/client/{client_id}")
+async def get_client_revisions(client_id: str, user: dict = Depends(get_current_user)):
+    try:
+        # Check access
+        if user.get('role') == 'client' and str(user.get('client_id')) != client_id:
+            raise HTTPException(status_code=403, detail="Erişim reddedildi")
+        
+        response = supabase.table('revisions').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
+        return response.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get client revisions error: {e}")
+        raise HTTPException(status_code=500, detail="Revizyonlar yüklenemedi")
+
+
+@api_router.get("/revisions/pending/count")
+async def get_pending_revisions_count(user: dict = Depends(require_admin_or_staff)):
+    try:
+        response = supabase.table('revisions').select('id', count='exact').eq('status', 'pending').execute()
+        return {"count": response.count or 0}
+    except Exception as e:
+        logging.error(f"Get pending revisions count error: {e}")
+        return {"count": 0}
+
+
+@api_router.post("/revisions")
+async def create_revision(data: RevisionCreate, user: dict = Depends(get_current_user)):
+    try:
+        client_id = user.get('client_id')
+        
+        # Admin/staff can create for any client
+        if user.get('role') in ['admin', 'staff']:
+            # Get client_id from content
+            if data.content_type == 'video':
+                content = supabase.table('videos').select('client_id').eq('id', data.content_id).single().execute()
+            else:
+                content = supabase.table('designs').select('client_id').eq('id', data.content_id).single().execute()
+            
+            if content.data:
+                client_id = content.data['client_id']
+        
+        if not client_id:
+            raise HTTPException(status_code=400, detail="Client ID bulunamadı")
+        
+        revision_data = {
+            'client_id': client_id,
+            'content_type': data.content_type,
+            'content_id': data.content_id,
+            'requested_by': user['id'],
+            'message': data.message,
+            'status': 'pending'
+        }
+        
+        response = supabase.table('revisions').insert(revision_data).execute()
+        
+        # Update content status
+        table = 'videos' if data.content_type == 'video' else 'designs'
+        supabase.table(table).update({'status': 'revision_requested'}).eq('id', data.content_id).execute()
+        
+        # Create notification for admin
+        create_notification(
+            user_id=None,  # Will be sent to all admins
+            notification_type='revision_request',
+            message=f"Yeni revizyon talebi: {data.content_type}",
+            link=f"/admin/revisions"
+        )
+        
+        log_audit(user['id'], user['email'], 'create', 'revision', response.data[0]['id'] if response.data else None, client_id)
+        
+        return response.data[0] if response.data else {"message": "Revizyon talebi oluşturuldu"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create revision error: {e}")
+        raise HTTPException(status_code=500, detail="Revizyon talebi oluşturulamadı")
+
+
+@api_router.put("/revisions/{revision_id}")
+async def respond_to_revision(revision_id: str, data: RevisionResponse, user: dict = Depends(require_admin_or_staff)):
+    try:
+        # Get revision
+        revision = supabase.table('revisions').select('*').eq('id', revision_id).single().execute()
+        
+        if not revision.data:
+            raise HTTPException(status_code=404, detail="Revizyon bulunamadı")
+        
+        update_data = {
+            'admin_response': data.admin_response,
+            'status': data.status,
+            'resolved_by': user['id'],
+            'resolved_at': datetime.now(timezone.utc).isoformat() if data.status in ['resolved', 'rejected'] else None,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        response = supabase.table('revisions').update(update_data).eq('id', revision_id).execute()
+        
+        # Update content status if resolved
+        if data.status == 'resolved':
+            table = 'videos' if revision.data['content_type'] == 'video' else 'designs'
+            supabase.table(table).update({'status': 'approved'}).eq('id', revision.data['content_id']).execute()
+        
+        # Notify client
+        if revision.data.get('requested_by'):
+            create_notification(
+                user_id=revision.data['requested_by'],
+                notification_type='revision_response',
+                message=f"Revizyon talebiniz {'tamamlandı' if data.status == 'resolved' else 'yanıtlandı'}",
+                link=f"/client/revisions"
+            )
+        
+        log_audit(user['id'], user['email'], 'update', 'revision', revision_id, revision.data.get('client_id'), after=update_data)
+        
+        return response.data[0] if response.data else {"message": "Revizyon güncellendi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Update revision error: {e}")
+        raise HTTPException(status_code=500, detail="Revizyon güncellenemedi")
+
+
+@api_router.delete("/revisions/{revision_id}")
+async def delete_revision(revision_id: str, user: dict = Depends(require_admin)):
+    try:
+        revision = supabase.table('revisions').select('*').eq('id', revision_id).single().execute()
+        
+        if not revision.data:
+            raise HTTPException(status_code=404, detail="Revizyon bulunamadı")
+        
+        supabase.table('revisions').delete().eq('id', revision_id).execute()
+        
+        log_audit(user['id'], user['email'], 'delete', 'revision', revision_id, before=revision.data)
+        
+        return {"message": "Revizyon silindi"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Delete revision error: {e}")
+        raise HTTPException(status_code=500, detail="Revizyon silinemedi")
+
+
+# =====================================================
+# ENHANCED NOTIFICATIONS
+# =====================================================
+@api_router.get("/notifications/all")
+async def get_all_notifications(user: dict = Depends(get_current_user)):
+    """Get all notifications for current user with pagination"""
+    try:
+        query = supabase.table('notifications').select('*').eq('user_id', user['id'])
+        response = query.order('created_at', desc=True).limit(50).execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"Get all notifications error: {e}")
+        return []
+
+
+@api_router.get("/notifications/grouped")
+async def get_grouped_notifications(user: dict = Depends(get_current_user)):
+    """Get notifications grouped by date"""
+    try:
+        response = supabase.table('notifications').select('*').eq('user_id', user['id']).order('created_at', desc=True).limit(100).execute()
+        
+        # Group by date
+        grouped = {}
+        for notif in response.data:
+            created = datetime.fromisoformat(notif['created_at'].replace('Z', '+00:00'))
+            date_key = created.strftime('%Y-%m-%d')
+            
+            if date_key not in grouped:
+                grouped[date_key] = []
+            grouped[date_key].append(notif)
+        
+        return grouped
+    except Exception as e:
+        logging.error(f"Get grouped notifications error: {e}")
+        return {}
+
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
+    try:
+        supabase.table('notifications').delete().eq('id', notification_id).eq('user_id', user['id']).execute()
+        return {"message": "Bildirim silindi"}
+    except Exception as e:
+        logging.error(f"Delete notification error: {e}")
+        raise HTTPException(status_code=500, detail="Bildirim silinemedi")
+
+
+@api_router.delete("/notifications/clear-all")
+async def clear_all_notifications(user: dict = Depends(get_current_user)):
+    try:
+        supabase.table('notifications').delete().eq('user_id', user['id']).execute()
+        return {"message": "Tüm bildirimler silindi"}
+    except Exception as e:
+        logging.error(f"Clear notifications error: {e}")
+        raise HTTPException(status_code=500, detail="Bildirimler silinemedi")
+
+
+@api_router.get("/user/permissions")
+async def get_user_permissions(user: dict = Depends(get_current_user)):
+    """Get current user's permissions for frontend access control"""
+    try:
+        role = user.get('role')
+        
+        if role == 'admin':
+            return {
+                'role': 'admin',
+                'permissions': {
+                    'can_manage_clients': True,
+                    'can_manage_content': True,
+                    'can_view_reports': True,
+                    'can_approve_receipts': True,
+                    'can_manage_calendar': True,
+                    'can_manage_staff': True,
+                    'can_manage_meta': True
+                }
+            }
+        elif role == 'staff':
+            perms = get_staff_permissions(user['id'])
+            return {
+                'role': 'staff',
+                'permissions': {
+                    'can_manage_clients': perms.get('can_manage_clients', False),
+                    'can_manage_content': perms.get('can_manage_content', False),
+                    'can_view_reports': perms.get('can_view_reports', False),
+                    'can_approve_receipts': perms.get('can_approve_receipts', False),
+                    'can_manage_calendar': perms.get('can_manage_calendar', False),
+                    'can_manage_staff': False,
+                    'can_manage_meta': False
+                }
+            }
+        else:
+            return {
+                'role': 'client',
+                'permissions': {
+                    'can_view_own_data': True,
+                    'can_upload_receipts': True,
+                    'can_request_revisions': True,
+                    'can_manage_finance': True
+                }
+            }
+    except Exception as e:
+        logging.error(f"Get user permissions error: {e}")
+        return {'role': user.get('role'), 'permissions': {}}
 
 
 # =====================================================

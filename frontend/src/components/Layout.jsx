@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, 
   LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell, 
-  Menu, X, ChevronRight, Wallet, User
+  Menu, X, ChevronRight, Wallet, User, MessageSquare
 } from 'lucide-react';
 import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
@@ -103,8 +103,10 @@ export const Layout = ({ role, clientId }) => {
     { icon: BarChart3, label: tr.sidebar.adsReports, path: '/admin/ads-reports' },
     { icon: Globe, label: 'Meta Entegrasyonu', path: '/admin/meta-integration' },
     { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts', badge: pendingReceiptsCount },
+    { icon: MessageSquare, label: 'Revizyonlar', path: '/admin/revisions' },
     { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
     { icon: Activity, label: tr.sidebar.activityLogs, path: '/admin/logs' },
+    { icon: Bell, label: 'Bildirimler', path: '/admin/notifications', badge: unreadNotifications },
   ];
 
   const clientNav = [
@@ -116,8 +118,10 @@ export const Layout = ({ role, clientId }) => {
     { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Web Sitesi Kurulumu') },
     { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-ticaret Yönetimi') },
     { icon: Receipt, label: 'Makbuzlarım', path: '/client/receipts', active: true },
+    { icon: MessageSquare, label: 'Revizyonlarım', path: '/client/revisions', active: true },
     { icon: Wallet, label: 'Muhasebe', path: '/client/finance', active: true },
     { icon: User, label: 'Profilim', path: '/client/profile', active: true },
+    { icon: Bell, label: 'Bildirimler', path: '/client/notifications', active: true, badge: unreadNotifications },
   ];
 
   const staffNav = [
