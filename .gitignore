@@ -77,8 +77,8 @@ agenthub/agents/youtube/db
 .cache/
 
 # Mobile development
-android-sdk/ frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/0.pack
--e 
+android-sdk/
+frontend/node_modules/.cache/
+
 # Note: .env files are NOT ignored as they are needed for deployment
 # Production values are auto-updated during deployment
