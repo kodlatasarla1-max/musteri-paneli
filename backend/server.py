@@ -474,14 +474,70 @@ async def init_system():
 @api_router.get("/clients")
 async def get_clients(user: dict = Depends(require_admin_or_staff)):
     try:
+        # Fetch all clients
         response = supabase.table('clients').select('*').order('created_at', desc=True).execute()
         
-        # Add access info for each client
+        if not response.data:
+            return []
+        
+        # Batch fetch all client access info in a single query
+        client_ids = [client['id'] for client in response.data]
+        now = datetime.now(timezone.utc)
+        
+        # Get all active access records for these clients
+        access_response = supabase.table('client_access').select('*').in_('client_id', client_ids).eq('status', 'active').gte('active_until', now.isoformat()).execute()
+        
+        # Get pending receipts count for all clients
+        pending_response = supabase.table('receipts').select('client_id').in_('client_id', client_ids).eq('status', 'pending').execute()
+        
+        # Create lookup maps
+        access_map = {}
+        for access in (access_response.data or []):
+            cid = access['client_id']
+            if cid not in access_map:
+                access_map[cid] = access
+            else:
+                # Keep the one with latest active_until
+                existing_until = datetime.fromisoformat(access_map[cid]['active_until'].replace('Z', '+00:00'))
+                new_until = datetime.fromisoformat(access['active_until'].replace('Z', '+00:00'))
+                if new_until > existing_until:
+                    access_map[cid] = access
+        
+        pending_map = {}
+        for pending in (pending_response.data or []):
+            cid = pending['client_id']
+            pending_map[cid] = pending_map.get(cid, 0) + 1
+        
+        # Build result with access info
         result = []
         for client in response.data:
             client_data = dict(client)
-            access_info = get_client_access_info(client['id'])
-            client_data['access_info'] = access_info
+            cid = client['id']
+            
+            if cid in access_map:
+                active_access = access_map[cid]
+                active_until = datetime.fromisoformat(active_access['active_until'].replace('Z', '+00:00'))
+                days_remaining = (active_until - now).days
+                client_data['access_info'] = {
+                    'has_access': True,
+                    'access_id': active_access['id'],
+                    'active_from': active_access['active_from'],
+                    'active_until': active_access['active_until'],
+                    'days_remaining': max(0, days_remaining),
+                    'status': 'active'
+                }
+            else:
+                has_pending = pending_map.get(cid, 0) > 0
+                client_data['access_info'] = {
+                    'has_access': False,
+                    'access_id': None,
+                    'active_from': None,
+                    'active_until': None,
+                    'days_remaining': 0,
+                    'status': 'pending' if has_pending else 'expired',
+                    'has_pending_receipt': has_pending
+                }
+            
             result.append(client_data)
         
         return result
