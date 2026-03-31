@@ -123,7 +123,7 @@ export const AdminRevisions = () => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -155,13 +155,13 @@ export const AdminRevisions = () => {
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilterStatus('in_progress')}>
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-white border-slate-200 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilterStatus('in_progress')}>
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
-              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-slate-900 rounded-xl">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-blue-900">{inProgressCount}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{inProgressCount}</p>
               <p className="text-xs sm:text-sm text-slate-600">İşlemde</p>
             </div>
           </div>
@@ -193,7 +193,7 @@ export const AdminRevisions = () => {
       </div>
 
       {/* Revisions Table */}
-      <Card className="border-blue-100 shadow-sm overflow-hidden">
+      <Card className="border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <h2 className="font-medium text-slate-900">
             {filterStatus === 'all' ? 'Tüm Revizyonlar' : `${filterStatus === 'pending' ? 'Bekleyen' : filterStatus === 'in_progress' ? 'İşlemdeki' : 'Tamamlanan'} Revizyonlar`}
@@ -207,7 +207,7 @@ export const AdminRevisions = () => {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-50/50">
+              <TableRow className="bg-slate-50">
                 <TableHead className="whitespace-nowrap">Müşteri</TableHead>
                 <TableHead className="whitespace-nowrap">İçerik Türü</TableHead>
                 <TableHead className="whitespace-nowrap hidden md:table-cell">Talep Eden</TableHead>
@@ -247,7 +247,7 @@ export const AdminRevisions = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => openResponseDialog(revision)}
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                        className="border-slate-300 text-slate-900 hover:bg-slate-50"
                         data-testid={`respond-button-${revision.id}`}
                       >
                         <Eye className="h-4 w-4 sm:mr-1" />
@@ -294,7 +294,7 @@ export const AdminRevisions = () => {
                     value={responseData.status} 
                     onValueChange={(val) => setResponseData({ ...responseData, status: val })}
                   >
-                    <SelectTrigger className="border-blue-200">
+                    <SelectTrigger className="border-slate-300">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -311,7 +311,7 @@ export const AdminRevisions = () => {
                     value={responseData.admin_response}
                     onChange={(e) => setResponseData({ ...responseData, admin_response: e.target.value })}
                     placeholder="Müşteriye yanıtınızı yazın..."
-                    className="min-h-[120px] border-blue-200"
+                    className="min-h-[120px] border-slate-300"
                     data-testid="admin-response-textarea"
                   />
                 </div>
@@ -325,7 +325,7 @@ export const AdminRevisions = () => {
             </Button>
             <Button 
               onClick={handleRespond}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-slate-900 hover:bg-black"
               disabled={submitting || !responseData.admin_response.trim()}
               data-testid="send-response-button"
             >

@@ -123,7 +123,7 @@ export const AdminClients = () => {
           <h1 className="text-2xl lg:text-4xl font-medium text-slate-900" data-testid="clients-title">{tr.admin.clients.title}</h1>
           <p className="text-sm lg:text-base text-slate-600 mt-1 lg:mt-2">Müşteri profillerini ve hizmet erişimlerini yönetin</p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" data-testid="add-client-button">
+        <Button onClick={() => setShowDialog(true)} className="bg-slate-900 hover:bg-black w-full sm:w-auto" data-testid="add-client-button">
           <Plus className="h-4 w-4 mr-2" />
           {tr.admin.clients.addClient}
         </Button>
@@ -166,7 +166,7 @@ export const AdminClients = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => openEditDialog(client)}
-                  className="flex-1 border-blue-200 text-blue-600"
+                  className="flex-1 border-slate-300 text-slate-900"
                 >
                   <Edit className="h-4 w-4 mr-1" /> Düzenle
                 </Button>
@@ -185,16 +185,16 @@ export const AdminClients = () => {
       </div>
 
       {/* Desktop: Table View */}
-      <Card className="border-blue-100 shadow-sm hidden lg:block">
+      <Card className="border-slate-200 shadow-sm hidden lg:block">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-50 border-b border-blue-100">
-              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.companyName}</TableHead>
-              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.contactName}</TableHead>
-              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.industry}</TableHead>
-              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.status}</TableHead>
-              <TableHead className="text-blue-900 font-semibold">{tr.admin.clients.accessDays}</TableHead>
-              <TableHead className="text-right text-blue-900 font-semibold">{tr.common.actions}</TableHead>
+            <TableRow className="bg-slate-50 border-b border-slate-200">
+              <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.companyName}</TableHead>
+              <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.contactName}</TableHead>
+              <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.industry}</TableHead>
+              <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.status}</TableHead>
+              <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.accessDays}</TableHead>
+              <TableHead className="text-right text-slate-900 font-semibold">{tr.common.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -231,7 +231,7 @@ export const AdminClients = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => openEditDialog(client)}
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                        className="border-slate-300 text-slate-900 hover:bg-slate-50"
                         data-testid={`edit-client-${client.id}`}
                       >
                         <Edit className="h-4 w-4" />
@@ -274,7 +274,7 @@ export const AdminClients = () => {
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="company-name-input"
                 />
               </div>
@@ -285,7 +285,7 @@ export const AdminClients = () => {
                   value={formData.contact_name}
                   onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="contact-name-input"
                 />
               </div>
@@ -297,7 +297,7 @@ export const AdminClients = () => {
                   value={formData.contact_email}
                   onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="contact-email-input"
                 />
               </div>
@@ -308,7 +308,7 @@ export const AdminClients = () => {
                   value={formData.contact_phone}
                   onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="contact-phone-input"
                 />
               </div>
@@ -319,7 +319,7 @@ export const AdminClients = () => {
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="industry-input"
                 />
               </div>
@@ -328,7 +328,7 @@ export const AdminClients = () => {
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 {tr.common.cancel}
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-client-button">
+              <Button type="submit" className="bg-slate-900 hover:bg-black" data-testid="submit-client-button">
                 {editingClient ? tr.common.update : tr.common.create}
               </Button>
             </DialogFooter>

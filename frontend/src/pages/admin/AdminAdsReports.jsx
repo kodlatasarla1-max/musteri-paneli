@@ -140,7 +140,7 @@ export const AdminAdsReports = () => {
           <h1 className="text-4xl font-medium text-slate-900" data-testid="ads-reports-title">{tr.admin.adsReports.title}</h1>
           <p className="text-slate-600 mt-2">Günlük reklam harcamaları ve performans metriklerini yönetin</p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="add-report-button">
+        <Button onClick={() => setShowDialog(true)} className="bg-slate-900 hover:bg-black" data-testid="add-report-button">
           <Plus className="h-4 w-4 mr-2" />
           {tr.admin.adsReports.addReport}
         </Button>
@@ -148,49 +148,49 @@ export const AdminAdsReports = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <DollarSign className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-slate-900 rounded-xl">
+              <DollarSign className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-blue-900">
+          <p className="text-3xl font-semibold text-slate-900">
             ${reports.reduce((sum, r) => sum + r.daily_spend, 0).toFixed(2)}
           </p>
           <p className="text-sm text-slate-600 mt-1">Toplam Harcama</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-indigo-100 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-indigo-600" />
+            <div className="p-3 bg-slate-700 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-indigo-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {reports.reduce((sum, r) => sum + r.impressions, 0).toLocaleString()}
           </p>
           <p className="text-sm text-slate-600 mt-1">Toplam Gösterim</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-cyan-100 rounded-xl">
-              <BarChart3 className="h-6 w-6 text-cyan-600" />
+            <div className="p-3 bg-slate-600 rounded-xl">
+              <BarChart3 className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-cyan-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {reports.reduce((sum, r) => sum + r.clicks, 0).toLocaleString()}
           </p>
           <p className="text-sm text-slate-600 mt-1">Toplam Tıklama</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-violet-100 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-violet-600" />
+            <div className="p-3 bg-slate-500 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-violet-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {reports.reduce((sum, r) => sum + r.conversions, 0)}
           </p>
           <p className="text-sm text-slate-600 mt-1">Toplam Dönüşüm</p>
@@ -198,10 +198,10 @@ export const AdminAdsReports = () => {
       </div>
 
       {/* Reports Table */}
-      <Card className="border-blue-100">
+      <Card className="border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-50">
+            <TableRow className="bg-slate-50">
               <TableHead>Müşteri</TableHead>
               <TableHead>Kampanya</TableHead>
               <TableHead>Tarih</TableHead>
@@ -253,7 +253,7 @@ export const AdminAdsReports = () => {
               <div className="space-y-2">
                 <Label>Müşteri</Label>
                 <Select value={selectedClient} onValueChange={setSelectedClient}>
-                  <SelectTrigger className="border-blue-200">
+                  <SelectTrigger className="border-slate-300">
                     <SelectValue placeholder="Müşteri seçin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -274,7 +274,7 @@ export const AdminAdsReports = () => {
                     value={reportForm.campaign_name}
                     onChange={(e) => setReportForm({ ...reportForm, campaign_name: e.target.value })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     placeholder="Kampanya adı"
                     data-testid="campaign-name-input"
                   />
@@ -288,7 +288,7 @@ export const AdminAdsReports = () => {
                     value={reportForm.report_date}
                     onChange={(e) => setReportForm({ ...reportForm, report_date: e.target.value })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="report-date-input"
                   />
                 </div>
@@ -305,7 +305,7 @@ export const AdminAdsReports = () => {
                     onChange={(e) => setReportForm({ ...reportForm, daily_spend: parseFloat(e.target.value) })}
                     onBlur={calculateMetrics}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="daily-spend-input"
                   />
                 </div>
@@ -319,7 +319,7 @@ export const AdminAdsReports = () => {
                     onChange={(e) => setReportForm({ ...reportForm, impressions: parseInt(e.target.value) })}
                     onBlur={calculateMetrics}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="impressions-input"
                   />
                 </div>
@@ -333,7 +333,7 @@ export const AdminAdsReports = () => {
                     onChange={(e) => setReportForm({ ...reportForm, clicks: parseInt(e.target.value) })}
                     onBlur={calculateMetrics}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="clicks-input"
                   />
                 </div>
@@ -348,7 +348,7 @@ export const AdminAdsReports = () => {
                     value={reportForm.conversions}
                     onChange={(e) => setReportForm({ ...reportForm, conversions: parseInt(e.target.value) })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="conversions-input"
                   />
                 </div>
@@ -361,7 +361,7 @@ export const AdminAdsReports = () => {
                     step="0.01"
                     value={reportForm.cpc}
                     onChange={(e) => setReportForm({ ...reportForm, cpc: parseFloat(e.target.value) })}
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="cpc-input"
                   />
                 </div>
@@ -374,7 +374,7 @@ export const AdminAdsReports = () => {
                     step="0.01"
                     value={reportForm.cpm}
                     onChange={(e) => setReportForm({ ...reportForm, cpm: parseFloat(e.target.value) })}
-                    className="border-blue-200"
+                    className="border-slate-300"
                     data-testid="cpm-input"
                   />
                 </div>
@@ -385,7 +385,7 @@ export const AdminAdsReports = () => {
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 {tr.common.cancel}
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-report-button">
+              <Button type="submit" className="bg-slate-900 hover:bg-black" data-testid="submit-report-button">
                 <Plus className="h-4 w-4 mr-2" />
                 Ekle
               </Button>

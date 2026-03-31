@@ -141,11 +141,11 @@ export const AdminCalendar = () => {
   const getEventIcon = (type) => {
     switch (type) {
       case 'shoot':
-        return <Video className="h-5 w-5 text-blue-600" />;
+        return <Video className="h-5 w-5 text-slate-900" />;
       case 'deadline':
         return <Clock className="h-5 w-5 text-amber-600" />;
       case 'meeting':
-        return <Users className="h-5 w-5 text-indigo-600" />;
+        return <Users className="h-5 w-5 text-slate-600" />;
       default:
         return <CalendarIcon className="h-5 w-5 text-slate-600" />;
     }
@@ -158,11 +158,11 @@ export const AdminCalendar = () => {
   const getEventColor = (type) => {
     switch (type) {
       case 'shoot':
-        return 'border-blue-200 bg-blue-50';
+        return 'border-slate-300 bg-slate-50';
       case 'deadline':
         return 'border-amber-200 bg-amber-50';
       case 'meeting':
-        return 'border-indigo-200 bg-indigo-50';
+        return 'border-slate-200 bg-white';
       default:
         return 'border-slate-200 bg-slate-50';
     }
@@ -179,7 +179,7 @@ export const AdminCalendar = () => {
           <h1 className="text-4xl font-medium text-slate-900" data-testid="calendar-title">{tr.admin.calendar.title}</h1>
           <p className="text-slate-600 mt-2">Çekim programları, son tarihler ve toplantıları yönetin</p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="add-event-button">
+        <Button onClick={() => setShowDialog(true)} className="bg-slate-900 hover:bg-black" data-testid="add-event-button">
           <Plus className="h-4 w-4 mr-2" />
           {tr.admin.calendar.addEvent}
         </Button>
@@ -187,7 +187,7 @@ export const AdminCalendar = () => {
 
       <div className="grid grid-cols-1 gap-4">
         {events.length === 0 ? (
-          <Card className="p-12 text-center border-blue-100">
+          <Card className="p-12 text-center border-slate-200">
             <CalendarIcon className="h-16 w-16 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-600">Henüz etkinlik yok</p>
           </Card>
@@ -282,7 +282,7 @@ export const AdminCalendar = () => {
               <div className="space-y-2">
                 <Label>Müşteri</Label>
                 <Select value={selectedClient} onValueChange={setSelectedClient}>
-                  <SelectTrigger className="border-blue-200">
+                  <SelectTrigger className="border-slate-300">
                     <SelectValue placeholder="Müşteri seçin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -298,7 +298,7 @@ export const AdminCalendar = () => {
               <div className="space-y-2">
                 <Label>{tr.admin.calendar.eventType}</Label>
                 <Select value={eventForm.event_type} onValueChange={(value) => setEventForm({ ...eventForm, event_type: value })}>
-                  <SelectTrigger className="border-blue-200">
+                  <SelectTrigger className="border-slate-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -316,7 +316,7 @@ export const AdminCalendar = () => {
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="Örn: Ürün Çekimi"
                   data-testid="event-title-input"
                 />
@@ -330,7 +330,7 @@ export const AdminCalendar = () => {
                   value={eventForm.event_date}
                   onChange={(e) => setEventForm({ ...eventForm, event_date: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   data-testid="event-date-input"
                 />
               </div>
@@ -341,7 +341,7 @@ export const AdminCalendar = () => {
                   id="location"
                   value={eventForm.location}
                   onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="İsteğe bağlı"
                   data-testid="event-location-input"
                 />
@@ -353,7 +353,7 @@ export const AdminCalendar = () => {
                   id="notes"
                   value={eventForm.notes}
                   onChange={(e) => setEventForm({ ...eventForm, notes: e.target.value })}
-                  className="border-blue-200"
+                  className="border-slate-300"
                   rows={3}
                   placeholder="İsteğe bağlı"
                 />
@@ -365,7 +365,7 @@ export const AdminCalendar = () => {
                   <Input
                     value={checklistInput}
                     onChange={(e) => setChecklistInput(e.target.value)}
-                    className="border-blue-200"
+                    className="border-slate-300"
                     placeholder="Bir madde ekleyin"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
@@ -374,14 +374,14 @@ export const AdminCalendar = () => {
                       }
                     }}
                   />
-                  <Button type="button" onClick={addToChecklist} variant="outline" className="border-blue-200">
+                  <Button type="button" onClick={addToChecklist} variant="outline" className="border-slate-300">
                     Ekle
                   </Button>
                 </div>
                 {eventForm.checklist.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {eventForm.checklist.map((item, idx) => (
-                      <li key={idx} className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                      <li key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded">
                         <span className="text-sm">{item}</span>
                         <Button
                           type="button"
@@ -403,7 +403,7 @@ export const AdminCalendar = () => {
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 {tr.common.cancel}
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-event-button">
+              <Button type="submit" className="bg-slate-900 hover:bg-black" data-testid="submit-event-button">
                 <Plus className="h-4 w-4 mr-2" />
                 Oluştur
               </Button>

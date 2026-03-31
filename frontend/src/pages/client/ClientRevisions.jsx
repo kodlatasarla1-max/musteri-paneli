@@ -115,7 +115,7 @@ export const ClientRevisions = () => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export const ClientRevisions = () => {
         </div>
         <Button 
           onClick={() => setShowDialog(true)} 
-          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+          className="bg-slate-900 hover:bg-black w-full sm:w-auto"
           disabled={videos.length === 0 && designs.length === 0}
           data-testid="new-revision-button"
         >
@@ -156,13 +156,13 @@ export const ClientRevisions = () => {
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
-              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-slate-900 rounded-xl">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-blue-900">{inProgressCount}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{inProgressCount}</p>
               <p className="text-xs sm:text-sm text-slate-600">İşlemde</p>
             </div>
           </div>
@@ -183,12 +183,12 @@ export const ClientRevisions = () => {
 
       {/* Revisions List */}
       {revisions.length === 0 ? (
-        <Card className="p-12 text-center border-blue-100">
+        <Card className="p-12 text-center border-slate-200">
           <MessageSquare className="h-16 w-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Revizyon Talebi Yok</h3>
           <p className="text-slate-600 mb-4">Henüz revizyon talebiniz bulunmuyor.</p>
           {(videos.length > 0 || designs.length > 0) && (
-            <Button onClick={() => setShowDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => setShowDialog(true)} className="bg-slate-900 hover:bg-black">
               <Plus className="h-4 w-4 mr-2" />
               İlk Talebinizi Oluşturun
             </Button>
@@ -197,7 +197,7 @@ export const ClientRevisions = () => {
       ) : (
         <div className="space-y-4">
           {revisions.map((revision) => (
-            <Card key={revision.id} className="p-4 sm:p-6 border-blue-100" data-testid={`revision-card-${revision.id}`}>
+            <Card key={revision.id} className="p-4 sm:p-6 border-slate-200" data-testid={`revision-card-${revision.id}`}>
               <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className={`p-3 rounded-xl shrink-0 ${
                   revision.content_type === 'video' ? 'bg-purple-100' : 'bg-pink-100'
@@ -267,7 +267,7 @@ export const ClientRevisions = () => {
                   value={formData.content_type} 
                   onValueChange={(val) => setFormData({ ...formData, content_type: val, content_id: '' })}
                 >
-                  <SelectTrigger className="border-blue-200" data-testid="content-type-select">
+                  <SelectTrigger className="border-slate-300" data-testid="content-type-select">
                     <SelectValue placeholder="Seçin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,7 +284,7 @@ export const ClientRevisions = () => {
                     value={formData.content_id} 
                     onValueChange={(val) => setFormData({ ...formData, content_id: val })}
                   >
-                    <SelectTrigger className="border-blue-200" data-testid="content-select">
+                    <SelectTrigger className="border-slate-300" data-testid="content-select">
                       <SelectValue placeholder="İçerik seçin" />
                     </SelectTrigger>
                     <SelectContent>
@@ -304,7 +304,7 @@ export const ClientRevisions = () => {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   placeholder="Hangi değişiklikleri istediğinizi detaylı açıklayın..."
-                  className="min-h-[120px] border-blue-200"
+                  className="min-h-[120px] border-slate-300"
                   data-testid="revision-message-input"
                 />
               </div>
@@ -316,7 +316,7 @@ export const ClientRevisions = () => {
               </Button>
               <Button 
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-slate-900 hover:bg-black"
                 disabled={submitting || !formData.content_type || !formData.content_id || !formData.message.trim()}
                 data-testid="submit-revision-button"
               >

@@ -197,7 +197,7 @@ export const AdminMetaIntegration = () => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -217,7 +217,7 @@ export const AdminMetaIntegration = () => {
           {oauthStatus?.configured && (
             <Button 
               onClick={() => setShowOAuthDialog(true)} 
-              className="bg-indigo-600 hover:bg-indigo-700" 
+              className="bg-slate-700 hover:bg-slate-800" 
               data-testid="oauth-connect-button"
               disabled={getUnconnectedClients().length === 0}
             >
@@ -231,7 +231,7 @@ export const AdminMetaIntegration = () => {
               setShowDialog(true);
             }} 
             variant={oauthStatus?.configured ? "outline" : "default"}
-            className={oauthStatus?.configured ? "border-blue-200 text-blue-600 hover:bg-blue-50" : "bg-blue-600 hover:bg-blue-700"} 
+            className={oauthStatus?.configured ? "border-slate-300 text-slate-900 hover:bg-slate-50" : "bg-slate-900 hover:bg-black"} 
             data-testid="connect-meta-button"
             disabled={getUnconnectedClients().length === 0}
           >
@@ -268,25 +268,25 @@ export const AdminMetaIntegration = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
-              <Link2 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-slate-900 rounded-xl">
+              <Link2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-blue-900">{metaAccounts.length}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{metaAccounts.length}</p>
               <p className="text-xs sm:text-sm text-slate-600">Bağlı Hesap</p>
             </div>
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-white border-green-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
             <div className="p-2 sm:p-3 bg-green-100 rounded-xl">
               <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-green-900">
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">
                 {metaAccounts.filter(a => a.is_active).length}
               </p>
               <p className="text-xs sm:text-sm text-slate-600">Aktif</p>
@@ -294,13 +294,13 @@ export const AdminMetaIntegration = () => {
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
             <div className="p-2 sm:p-3 bg-amber-100 rounded-xl">
               <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-amber-900">
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">
                 {getUnconnectedClients().length}
               </p>
               <p className="text-xs sm:text-sm text-slate-600">Bağlanmamış</p>
@@ -308,13 +308,13 @@ export const AdminMetaIntegration = () => {
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-indigo-100 rounded-xl">
-              <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
+            <div className="p-2 sm:p-3 bg-slate-200 rounded-xl">
+              <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-slate-600" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-indigo-900">{clients.length}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{clients.length}</p>
               <p className="text-xs sm:text-sm text-slate-600">Toplam Müşteri</p>
             </div>
           </div>
@@ -322,14 +322,14 @@ export const AdminMetaIntegration = () => {
       </div>
 
       {/* Connected Accounts Table */}
-      <Card className="border-blue-100 shadow-sm overflow-hidden">
+      <Card className="border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50">
           <h2 className="font-medium text-slate-900">Bağlı Meta Hesapları</h2>
         </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-50/50">
+              <TableRow className="bg-slate-50">
                 <TableHead className="whitespace-nowrap">Müşteri</TableHead>
                 <TableHead className="whitespace-nowrap">Hesap Adı</TableHead>
                 <TableHead className="whitespace-nowrap hidden sm:table-cell">Ad Account ID</TableHead>
@@ -374,7 +374,7 @@ export const AdminMetaIntegration = () => {
                           variant="outline"
                           onClick={() => handleSync(account.client_id)}
                           disabled={syncingClient === account.client_id}
-                          className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                          className="border-slate-300 text-slate-900 hover:bg-slate-50"
                           data-testid={`sync-button-${account.client_id}`}
                         >
                           <RefreshCw className={`h-4 w-4 ${syncingClient === account.client_id ? 'animate-spin' : ''}`} />
@@ -402,9 +402,9 @@ export const AdminMetaIntegration = () => {
       </Card>
 
       {/* Info Card */}
-      <Card className="mt-6 p-6 border-blue-100 bg-blue-50/50">
+      <Card className="mt-6 p-6 border-slate-200 bg-slate-50">
         <h3 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
-          <ExternalLink className="h-5 w-5 text-blue-600" />
+          <ExternalLink className="h-5 w-5 text-slate-900" />
           Meta Access Token Nasıl Alınır?
         </h3>
         <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
@@ -440,7 +440,7 @@ export const AdminMetaIntegration = () => {
               <div className="space-y-2">
                 <Label>Müşteri</Label>
                 <Select value={formData.client_id} onValueChange={(val) => setFormData({ ...formData, client_id: val })}>
-                  <SelectTrigger className="border-blue-200" data-testid="client-select">
+                  <SelectTrigger className="border-slate-300" data-testid="client-select">
                     <SelectValue placeholder="Müşteri seçin" />
                   </SelectTrigger>
                   <SelectContent>
@@ -459,7 +459,7 @@ export const AdminMetaIntegration = () => {
                   id="account_name"
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="Örn: ABC Şirketi - Ana Hesap"
                   data-testid="account-name-input"
                 />
@@ -472,7 +472,7 @@ export const AdminMetaIntegration = () => {
                   value={formData.ad_account_id}
                   onChange={(e) => setFormData({ ...formData, ad_account_id: e.target.value })}
                   required
-                  className="border-blue-200 font-mono"
+                  className="border-slate-300 font-mono"
                   placeholder="123456789012345"
                   data-testid="ad-account-input"
                 />
@@ -486,7 +486,7 @@ export const AdminMetaIntegration = () => {
                   value={formData.meta_access_token}
                   onChange={(e) => setFormData({ ...formData, meta_access_token: e.target.value })}
                   required
-                  className="border-blue-200 font-mono text-xs"
+                  className="border-slate-300 font-mono text-xs"
                   placeholder="EAAxxxxxx..."
                   data-testid="access-token-input"
                 />
@@ -500,7 +500,7 @@ export const AdminMetaIntegration = () => {
               </Button>
               <Button 
                 type="submit" 
-                className="bg-blue-600 hover:bg-blue-700" 
+                className="bg-slate-900 hover:bg-black" 
                 data-testid="submit-meta-button"
                 disabled={submitting || !formData.client_id}
               >
@@ -542,7 +542,7 @@ export const AdminMetaIntegration = () => {
         <DialogContent aria-describedby="oauth-dialog-desc">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-indigo-600" />
+              <Zap className="h-5 w-5 text-slate-900" />
               Meta OAuth ile Bağlan
             </DialogTitle>
             <DialogDescription id="oauth-dialog-desc">
@@ -554,7 +554,7 @@ export const AdminMetaIntegration = () => {
             <div className="space-y-2">
               <Label>Müşteri Seçin</Label>
               <Select value={selectedClientForOAuth} onValueChange={setSelectedClientForOAuth}>
-                <SelectTrigger className="border-indigo-200">
+                <SelectTrigger className="border-slate-300">
                   <SelectValue placeholder="Müşteri seçin" />
                 </SelectTrigger>
                 <SelectContent>
@@ -567,9 +567,9 @@ export const AdminMetaIntegration = () => {
               </Select>
             </div>
             
-            <div className="p-4 bg-indigo-50 rounded-lg">
-              <h4 className="font-medium text-indigo-900 mb-2">OAuth Avantajları</h4>
-              <ul className="text-sm text-indigo-700 space-y-1">
+            <div className="p-4 bg-slate-50 rounded-lg">
+              <h4 className="font-medium text-slate-900 mb-2">OAuth Avantajları</h4>
+              <ul className="text-sm text-slate-700 space-y-1">
                 <li>• Token manuel girmek yerine otomatik alınır</li>
                 <li>• 60 gün geçerli long-lived token</li>
                 <li>• Tüm reklam hesapları otomatik listelenir</li>
@@ -584,7 +584,7 @@ export const AdminMetaIntegration = () => {
             </Button>
             <Button 
               onClick={handleStartOAuth}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-slate-900 hover:bg-black"
               disabled={!selectedClientForOAuth}
             >
               <ExternalLink className="h-4 w-4 mr-2" />

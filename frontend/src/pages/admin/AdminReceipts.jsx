@@ -162,13 +162,13 @@ export const AdminReceipts = () => {
 
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="mb-6 bg-slate-100 border border-slate-200">
-          <TabsTrigger value="pending" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+          <TabsTrigger value="pending" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white">
             Bekleyen ({pendingReceipts.length})
           </TabsTrigger>
-          <TabsTrigger value="approved" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+          <TabsTrigger value="approved" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white">
             Onaylanan ({approvedReceipts.length})
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+          <TabsTrigger value="rejected" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white">
             Reddedilen ({rejectedReceipts.length})
           </TabsTrigger>
         </TabsList>
@@ -179,16 +179,16 @@ export const AdminReceipts = () => {
           { value: 'rejected', list: rejectedReceipts }
         ].map(({ value, list }) => (
           <TabsContent key={value} value={value}>
-            <Card className="border-blue-100">
+            <Card className="border-slate-200">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-blue-50 border-b border-blue-100">
-                    <TableHead className="text-blue-900 font-semibold">Müşteri</TableHead>
-                    <TableHead className="text-blue-900 font-semibold">Tutar</TableHead>
-                    <TableHead className="text-blue-900 font-semibold">Ödeme Tarihi</TableHead>
-                    <TableHead className="text-blue-900 font-semibold">Yüklenme Tarihi</TableHead>
-                    <TableHead className="text-blue-900 font-semibold">Durum</TableHead>
-                    <TableHead className="text-blue-900 font-semibold">İşlemler</TableHead>
+                  <TableRow className="bg-slate-50 border-b border-slate-200">
+                    <TableHead className="text-slate-900 font-semibold">Müşteri</TableHead>
+                    <TableHead className="text-slate-900 font-semibold">Tutar</TableHead>
+                    <TableHead className="text-slate-900 font-semibold">Ödeme Tarihi</TableHead>
+                    <TableHead className="text-slate-900 font-semibold">Yüklenme Tarihi</TableHead>
+                    <TableHead className="text-slate-900 font-semibold">Durum</TableHead>
+                    <TableHead className="text-slate-900 font-semibold">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,7 +202,7 @@ export const AdminReceipts = () => {
                     list.map((receipt) => (
                       <TableRow key={receipt.id} data-testid={`receipt-row-${receipt.id}`}>
                         <TableCell className="font-medium">{receipt.client_name}</TableCell>
-                        <TableCell className="font-semibold text-blue-600">₺{receipt.amount.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold text-slate-900">₺{receipt.amount.toFixed(2)}</TableCell>
                         <TableCell>{new Date(receipt.payment_date).toLocaleDateString('tr-TR')}</TableCell>
                         <TableCell>{new Date(receipt.created_at).toLocaleDateString('tr-TR')}</TableCell>
                         <TableCell>{getStatusBadge(receipt.status)}</TableCell>
@@ -233,7 +233,7 @@ export const AdminReceipts = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => window.open(receipt.receipt_file_url, '_blank')}
-                                className="border-blue-200"
+                                className="border-slate-300"
                               >
                                 <FileText className="h-4 w-4 mr-1" />
                                 Görüntüle
@@ -265,7 +265,7 @@ export const AdminReceipts = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="p-4 bg-slate-50 rounded-lg">
               <p className="text-sm font-medium text-slate-900 mb-2">Müşteri: {selectedReceipt?.client_name}</p>
               <p className="text-sm text-slate-600">Tutar: ₺{selectedReceipt?.amount?.toFixed(2)}</p>
             </div>
@@ -287,7 +287,7 @@ export const AdminReceipts = () => {
                 id="admin_notes"
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
-                className="border-blue-200"
+                className="border-slate-300"
                 rows={3}
                 placeholder={selectedReceipt?.action === 'reject' ? 'Reddetme sebebini belirtin...' : 'Not ekleyin...'}
                 data-testid="admin-notes-textarea"

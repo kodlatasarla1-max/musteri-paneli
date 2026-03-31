@@ -165,7 +165,7 @@ export const ClientReceipts = () => {
         </div>
         <Button 
           onClick={() => setShowUploadDialog(true)}
-          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+          className="bg-slate-900 hover:bg-black w-full sm:w-auto"
           data-testid="upload-receipt-button"
         >
           <Upload className="h-4 w-4 mr-2" />
@@ -263,7 +263,7 @@ export const ClientReceipts = () => {
           <Receipt className="h-12 w-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Henüz makbuz yok</h3>
           <p className="text-slate-600 mb-4">Ödeme yaptıktan sonra makbuzunuzu yükleyebilirsiniz.</p>
-          <Button onClick={() => setShowUploadDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setShowUploadDialog(true)} className="bg-slate-900 hover:bg-black">
             <Upload className="h-4 w-4 mr-2" />
             İlk Makbuzunuzu Yükleyin
           </Button>
@@ -294,8 +294,8 @@ export const ClientReceipts = () => {
                     <div key={receipt.id} className="p-4 hover:bg-slate-50 transition-colors" data-testid={`receipt-${receipt.id}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <FileText className="h-5 w-5 text-blue-600" />
+                          <div className="p-2 bg-slate-100 rounded-lg">
+                            <FileText className="h-5 w-5 text-slate-900" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-slate-900">₺{receipt.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
@@ -393,7 +393,7 @@ export const ClientReceipts = () => {
               <Button
                 onClick={handleUpload}
                 disabled={uploading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-slate-900 hover:bg-black"
               >
                 {uploading ? 'Yükleniyor...' : 'Yükle'}
               </Button>

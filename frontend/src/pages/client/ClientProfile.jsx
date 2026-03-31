@@ -126,7 +126,7 @@ export const ClientProfile = () => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -144,11 +144,11 @@ export const ClientProfile = () => {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Avatar Section */}
-        <Card className="p-6 border-blue-100 lg:col-span-1">
+        <Card className="p-6 border-slate-200 lg:col-span-1">
           <div className="flex flex-col items-center">
             <div className="relative mb-4">
               <div 
-                className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-32 h-32 rounded-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={handleAvatarClick}
                 data-testid="avatar-container"
               >
@@ -159,7 +159,7 @@ export const ClientProfile = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="h-16 w-16 text-blue-400" />
+                  <User className="h-16 w-16 text-slate-400" />
                 )}
                 
                 {uploading && (
@@ -172,7 +172,7 @@ export const ClientProfile = () => {
               <button
                 type="button"
                 onClick={handleAvatarClick}
-                className="absolute bottom-0 right-0 p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition-colors shadow-lg"
+                className="absolute bottom-0 right-0 p-2 bg-slate-900 rounded-full text-white hover:bg-black transition-colors shadow-lg"
                 disabled={uploading}
                 data-testid="change-avatar-button"
               >
@@ -201,7 +201,7 @@ export const ClientProfile = () => {
         </Card>
 
         {/* Profile Form */}
-        <Card className="p-6 border-blue-100 lg:col-span-2">
+        <Card className="p-6 border-slate-200 lg:col-span-2">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
@@ -213,7 +213,7 @@ export const ClientProfile = () => {
                   id="full_name"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="border-blue-200 focus:border-blue-500"
+                  className="border-slate-300 focus:border-slate-900"
                   data-testid="fullname-input"
                   placeholder="Ad Soyad"
                 />
@@ -243,7 +243,7 @@ export const ClientProfile = () => {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="border-blue-200 focus:border-blue-500"
+                  className="border-slate-300 focus:border-slate-900"
                   data-testid="phone-input"
                   placeholder="+90 5XX XXX XX XX"
                 />
@@ -258,7 +258,7 @@ export const ClientProfile = () => {
                   id="company_name"
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  className="border-blue-200 focus:border-blue-500"
+                  className="border-slate-300 focus:border-slate-900"
                   data-testid="company-input"
                   placeholder="Şirket Adı"
                 />
@@ -274,7 +274,7 @@ export const ClientProfile = () => {
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="border-blue-200 focus:border-blue-500 min-h-[100px]"
+                className="border-slate-300 focus:border-slate-900 min-h-[100px]"
                 data-testid="address-input"
                 placeholder="Tam adres"
               />
@@ -283,7 +283,7 @@ export const ClientProfile = () => {
             <div className="flex justify-end pt-4 border-t border-slate-100">
               <Button 
                 type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                className="bg-slate-900 hover:bg-black w-full sm:w-auto"
                 disabled={saving}
                 data-testid="save-profile-button"
               >
@@ -305,7 +305,7 @@ export const ClientProfile = () => {
       </div>
 
       {/* Account Info */}
-      <Card className="mt-6 p-6 border-blue-100">
+      <Card className="mt-6 p-6 border-slate-200">
         <h3 className="text-lg font-medium text-slate-900 mb-4">Hesap Bilgileri</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="p-4 bg-slate-50 rounded-lg">

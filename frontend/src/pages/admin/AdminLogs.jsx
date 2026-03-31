@@ -36,14 +36,14 @@ export const AdminLogs = () => {
   const getActionBadge = (action) => {
     const colors = {
       create: 'bg-green-100 text-green-800',
-      update: 'bg-blue-100 text-blue-800',
+      update: 'bg-slate-100 text-slate-800',
       delete: 'bg-red-100 text-red-800',
-      approve: 'bg-indigo-100 text-indigo-800',
+      approve: 'bg-slate-200 text-slate-900',
       reject: 'bg-red-100 text-red-800',
       toggle_service: 'bg-amber-100 text-amber-800',
       approve_receipt: 'bg-green-100 text-green-800',
       reject_receipt: 'bg-red-100 text-red-800',
-      update_status: 'bg-blue-100 text-blue-800'
+      update_status: 'bg-slate-100 text-slate-800'
     };
 
     const color = colors[action] || 'bg-slate-100 text-slate-800';
@@ -58,11 +58,11 @@ export const AdminLogs = () => {
   const getResourceIcon = (resourceType) => {
     switch (resourceType) {
       case 'client':
-        return <User className="h-4 w-4 text-blue-600" />;
+        return <User className="h-4 w-4 text-slate-900" />;
       case 'video':
       case 'design':
       case 'social_post':
-        return <FileText className="h-4 w-4 text-indigo-600" />;
+        return <FileText className="h-4 w-4 text-slate-600" />;
       case 'calendar_event':
         return <Calendar className="h-4 w-4 text-amber-600" />;
       default:
@@ -83,47 +83,47 @@ export const AdminLogs = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Activity className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-slate-900 rounded-xl">
+              <Activity className="h-6 w-6 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-blue-900">{logs.length}</p>
+          <p className="text-3xl font-semibold text-slate-900">{logs.length}</p>
           <p className="text-sm text-slate-600 mt-1">Toplam Aktivite</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-white border-green-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-3 bg-green-100 rounded-xl">
               <Activity className="h-6 w-6 text-green-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-green-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {logs.filter(l => l.action === 'create').length}
           </p>
           <p className="text-sm text-slate-600 mt-1">Oluşturma</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-indigo-100 rounded-xl">
-              <Activity className="h-6 w-6 text-indigo-600" />
+            <div className="p-3 bg-slate-200 rounded-xl">
+              <Activity className="h-6 w-6 text-slate-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-indigo-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {logs.filter(l => l.action === 'update' || l.action === 'update_status').length}
           </p>
           <p className="text-sm text-slate-600 mt-1">Güncelleme</p>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-rose-50 to-white border-rose-100">
+        <Card className="p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-3 bg-rose-100 rounded-xl">
-              <Activity className="h-6 w-6 text-rose-600" />
+            <div className="p-3 bg-red-100 rounded-xl">
+              <Activity className="h-6 w-6 text-red-600" />
             </div>
           </div>
-          <p className="text-3xl font-semibold text-rose-900">
+          <p className="text-3xl font-semibold text-slate-900">
             {logs.filter(l => l.action === 'delete').length}
           </p>
           <p className="text-sm text-slate-600 mt-1">Silme</p>
@@ -131,10 +131,10 @@ export const AdminLogs = () => {
       </div>
 
       {/* Logs Table */}
-      <Card className="border-blue-100">
+      <Card className="border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-50">
+            <TableRow className="bg-slate-50">
               <TableHead>Zaman</TableHead>
               <TableHead>Kullanıcı</TableHead>
               <TableHead>İşlem</TableHead>
@@ -151,7 +151,7 @@ export const AdminLogs = () => {
               </TableRow>
             ) : (
               logs.map((log) => (
-                <TableRow key={log.id} data-testid={`log-row-${log.id}`} className="hover:bg-blue-50">
+                <TableRow key={log.id} data-testid={`log-row-${log.id}`} className="hover:bg-slate-50">
                   <TableCell className="text-sm text-slate-600">
                     {new Date(log.timestamp).toLocaleString('tr-TR')}
                   </TableCell>

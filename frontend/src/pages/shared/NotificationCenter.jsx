@@ -104,7 +104,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
       case 'receipt_rejected':
         return <AlertCircle className="h-5 w-5 text-red-600" />;
       case 'receipt_uploaded':
-        return <Receipt className="h-5 w-5 text-blue-600" />;
+        return <Receipt className="h-5 w-5 text-slate-600" />;
       case 'revision_request':
         return <MessageSquare className="h-5 w-5 text-purple-600" />;
       case 'revision_response':
@@ -114,7 +114,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
       case 'access_expired':
         return <AlertCircle className="h-5 w-5 text-red-600" />;
       default:
-        return <Info className="h-5 w-5 text-blue-600" />;
+        return <Info className="h-5 w-5 text-slate-600" />;
     }
   };
 
@@ -133,7 +133,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
       case 'revision_response':
         return 'bg-purple-50';
       default:
-        return 'bg-blue-50';
+        return 'bg-slate-50';
     }
   };
 
@@ -159,7 +159,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -181,7 +181,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
             <Button 
               variant="outline" 
               onClick={handleMarkAllAsRead}
-              className="border-blue-200 text-blue-600 hover:bg-blue-50"
+              className="border-slate-300 text-slate-900 hover:bg-slate-50"
               data-testid="mark-all-read-button"
             >
               <CheckCheck className="h-4 w-4 mr-2" />
@@ -204,25 +204,25 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
-              <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-slate-900 rounded-xl">
+              <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-blue-900">{notifications.length}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{notifications.length}</p>
               <p className="text-xs sm:text-sm text-slate-600">Toplam Bildirim</p>
             </div>
           </div>
         </Card>
         
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+        <Card className="p-4 sm:p-6 bg-white border-slate-200">
           <div className="flex items-center gap-3">
             <div className="p-2 sm:p-3 bg-amber-100 rounded-xl">
               <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-amber-900">{unreadCount}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{unreadCount}</p>
               <p className="text-xs sm:text-sm text-slate-600">Okunmamış</p>
             </div>
           </div>
@@ -231,7 +231,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
 
       {/* Notifications List */}
       {notifications.length === 0 ? (
-        <Card className="p-12 text-center border-blue-100">
+        <Card className="p-12 text-center border-slate-200">
           <Bell className="h-16 w-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Bildirim Yok</h3>
           <p className="text-slate-600">Henüz bildiriminiz bulunmuyor.</p>
@@ -247,7 +247,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
                 {groupedNotifications[dateKey].map((notification) => (
                   <Card 
                     key={notification.id}
-                    className={`p-4 border-blue-100 cursor-pointer transition-all hover:shadow-md ${getNotificationBg(notification.type, notification.is_read)}`}
+                    className={`p-4 border-slate-200 cursor-pointer transition-all hover:shadow-md ${getNotificationBg(notification.type, notification.is_read)}`}
                     onClick={() => handleNotificationClick(notification)}
                     data-testid={`notification-${notification.id}`}
                   >
@@ -262,7 +262,7 @@ export const NotificationCenter = ({ userRole = 'client' }) => {
                             {notification.message}
                           </p>
                           {!notification.is_read && (
-                            <Badge className="bg-blue-600 text-white shrink-0">Yeni</Badge>
+                            <Badge className="bg-slate-900 text-white shrink-0">Yeni</Badge>
                           )}
                         </div>
                         <p className="text-xs text-slate-400 mt-1">

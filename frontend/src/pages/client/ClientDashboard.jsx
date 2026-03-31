@@ -163,43 +163,43 @@ export const ClientDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
-        <Card className="p-4 lg:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100" data-testid="stat-videos">
+        <Card className="p-4 lg:p-6 bg-white border-slate-200 hover:border-slate-300 transition-all" data-testid="stat-videos">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 lg:p-3 bg-blue-100 rounded-lg">
-              <Video className="h-4 w-4 lg:h-6 lg:w-6 text-blue-600" />
+            <div className="p-2 lg:p-3 bg-slate-900 rounded-lg">
+              <Video className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
             </div>
           </div>
-          <p className="text-2xl lg:text-3xl font-semibold text-blue-900">{stats.videosDelivered}</p>
+          <p className="text-2xl lg:text-3xl font-semibold text-slate-900">{stats.videosDelivered}</p>
           <p className="text-xs lg:text-sm text-slate-600 mt-1">Teslim Edilen Video</p>
         </Card>
 
-        <Card className="p-4 lg:p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100" data-testid="stat-designs">
+        <Card className="p-4 lg:p-6 bg-white border-slate-200 hover:border-slate-300 transition-all" data-testid="stat-designs">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 lg:p-3 bg-indigo-100 rounded-lg">
-              <Image className="h-4 w-4 lg:h-6 lg:w-6 text-indigo-600" />
+            <div className="p-2 lg:p-3 bg-slate-700 rounded-lg">
+              <Image className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
             </div>
           </div>
-          <p className="text-2xl lg:text-3xl font-semibold text-indigo-900">{stats.designsDelivered}</p>
+          <p className="text-2xl lg:text-3xl font-semibold text-slate-900">{stats.designsDelivered}</p>
           <p className="text-xs lg:text-sm text-slate-600 mt-1">Teslim Edilen Tasarım</p>
         </Card>
 
-        <Card className="p-4 lg:p-6 bg-gradient-to-br from-cyan-50 to-white border-cyan-100" data-testid="stat-content">
+        <Card className="p-4 lg:p-6 bg-white border-slate-200 hover:border-slate-300 transition-all" data-testid="stat-content">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 lg:p-3 bg-cyan-100 rounded-lg">
-              <Calendar className="h-4 w-4 lg:h-6 lg:w-6 text-cyan-600" />
+            <div className="p-2 lg:p-3 bg-slate-600 rounded-lg">
+              <Calendar className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
             </div>
           </div>
-          <p className="text-2xl lg:text-3xl font-semibold text-cyan-900">{stats.contentPublished}</p>
+          <p className="text-2xl lg:text-3xl font-semibold text-slate-900">{stats.contentPublished}</p>
           <p className="text-xs lg:text-sm text-slate-600 mt-1">Toplam İçerik</p>
         </Card>
 
-        <Card className="p-4 lg:p-6 bg-gradient-to-br from-violet-50 to-white border-violet-100" data-testid="stat-ad-spend">
+        <Card className="p-4 lg:p-6 bg-white border-slate-200 hover:border-slate-300 transition-all" data-testid="stat-ad-spend">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 lg:p-3 bg-violet-100 rounded-lg">
-              <TrendingUp className="h-4 w-4 lg:h-6 lg:w-6 text-violet-600" />
+            <div className="p-2 lg:p-3 bg-slate-500 rounded-lg">
+              <TrendingUp className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
             </div>
           </div>
-          <p className="text-2xl lg:text-3xl font-semibold text-violet-900">₺{stats.monthlyAdSpend.toLocaleString('tr-TR')}</p>
+          <p className="text-2xl lg:text-3xl font-semibold text-slate-900">₺{stats.monthlyAdSpend.toLocaleString('tr-TR')}</p>
           <p className="text-xs lg:text-sm text-slate-600 mt-1">Aylık Reklam Harcaması</p>
         </Card>
       </div>
@@ -248,7 +248,7 @@ export const ClientDashboard = () => {
             </Card>
           ) : (
             services.filter(s => s.is_active).map((service) => (
-              <Card key={service.id} className="p-4 lg:p-6 bg-white border-blue-100 hover:border-blue-200 hover:shadow-md transition-all" data-testid={`service-card-${service.service_id}`}>
+              <Card key={service.id} className="p-4 lg:p-6 bg-white border-slate-200 hover:border-slate-300 hover:shadow-md transition-all" data-testid={`service-card-${service.service_id}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-xs text-green-700 font-medium">Aktif</span>

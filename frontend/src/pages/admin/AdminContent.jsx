@@ -178,7 +178,7 @@ export const AdminContent = () => {
       case 'revision_requested':
         return <AlertCircle className="h-4 w-4 text-amber-600" />;
       default:
-        return <Clock className="h-4 w-4 text-blue-600" />;
+        return <Clock className="h-4 w-4 text-slate-600" />;
     }
   };
 
@@ -200,12 +200,12 @@ export const AdminContent = () => {
       </div>
 
       <Tabs defaultValue="videos" className="w-full">
-        <TabsList className="mb-6 bg-blue-50">
-          <TabsTrigger value="videos" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+        <TabsList className="mb-6 bg-slate-100">
+          <TabsTrigger value="videos" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white">
             <Video className="h-4 w-4 mr-2" />
             {tr.admin.content.videos}
           </TabsTrigger>
-          <TabsTrigger value="designs" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+          <TabsTrigger value="designs" className="data-[state=active]:bg-slate-900 data-[state=active]:text-white">
             <Image className="h-4 w-4 mr-2" />
             {tr.admin.content.designs}
           </TabsTrigger>
@@ -213,7 +213,7 @@ export const AdminContent = () => {
 
         <TabsContent value="videos">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => setShowVideoDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="upload-video-button">
+            <Button onClick={() => setShowVideoDialog(true)} className="bg-slate-900 hover:bg-black" data-testid="upload-video-button">
               <Plus className="h-4 w-4 mr-2" />
               {tr.admin.content.uploadVideo}
             </Button>
@@ -221,13 +221,13 @@ export const AdminContent = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {videos.length === 0 ? (
-              <Card className="p-8 col-span-3 text-center border-blue-100">
+              <Card className="p-8 col-span-3 text-center border-slate-200">
                 <Video className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-600">Henüz video yüklenmedi</p>
               </Card>
             ) : (
               videos.map((video) => (
-                <Card key={video.id} className="overflow-hidden border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`video-item-${video.id}`}>
+                <Card key={video.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-shadow" data-testid={`video-item-${video.id}`}>
                   <div className="aspect-video bg-slate-200 relative flex items-center justify-center">
                     <Video className="h-12 w-12 text-slate-400" />
                   </div>
@@ -248,7 +248,7 @@ export const AdminContent = () => {
 
         <TabsContent value="designs">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => setShowDesignDialog(true)} className="bg-blue-600 hover:bg-blue-700" data-testid="upload-design-button">
+            <Button onClick={() => setShowDesignDialog(true)} className="bg-slate-900 hover:bg-black" data-testid="upload-design-button">
               <Plus className="h-4 w-4 mr-2" />
               {tr.admin.content.uploadDesign}
             </Button>
@@ -256,13 +256,13 @@ export const AdminContent = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {designs.length === 0 ? (
-              <Card className="p-8 col-span-4 text-center border-blue-100">
+              <Card className="p-8 col-span-4 text-center border-slate-200">
                 <Image className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-600">Henüz tasarım yüklenmedi</p>
               </Card>
             ) : (
               designs.map((design) => (
-                <Card key={design.id} className="overflow-hidden border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`design-item-${design.id}`}>
+                <Card key={design.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-shadow" data-testid={`design-item-${design.id}`}>
                   <div className="aspect-square bg-slate-200 relative flex items-center justify-center">
                     <Image className="h-12 w-12 text-slate-400" />
                   </div>
@@ -316,7 +316,7 @@ export const AdminContent = () => {
                   value={videoForm.project_name}
                   onChange={(e) => setVideoForm({ ...videoForm, project_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="Örn: Ürün Tanıtım Videosu"
                   data-testid="video-project-name-input"
                 />
@@ -329,7 +329,7 @@ export const AdminContent = () => {
                   value={videoForm.file_name}
                   onChange={(e) => setVideoForm({ ...videoForm, file_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="video.mp4"
                   data-testid="video-file-name-input"
                 />
@@ -342,7 +342,7 @@ export const AdminContent = () => {
                   value={videoForm.file_url}
                   onChange={(e) => setVideoForm({ ...videoForm, file_url: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="https://..."
                   data-testid="video-file-url-input"
                 />
@@ -357,7 +357,7 @@ export const AdminContent = () => {
                     value={videoForm.file_size}
                     onChange={(e) => setVideoForm({ ...videoForm, file_size: parseInt(e.target.value) })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                   />
                 </div>
 
@@ -369,7 +369,7 @@ export const AdminContent = () => {
                     value={videoForm.month}
                     onChange={(e) => setVideoForm({ ...videoForm, month: e.target.value })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                   />
                 </div>
               </div>
@@ -380,7 +380,7 @@ export const AdminContent = () => {
                   id="notes"
                   value={videoForm.notes}
                   onChange={(e) => setVideoForm({ ...videoForm, notes: e.target.value })}
-                  className="border-blue-200"
+                  className="border-slate-300"
                   rows={3}
                 />
               </div>
@@ -390,7 +390,7 @@ export const AdminContent = () => {
               <Button type="button" variant="outline" onClick={() => setShowVideoDialog(false)}>
                 {tr.common.cancel}
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-video-button">
+              <Button type="submit" className="bg-slate-900 hover:bg-black" data-testid="submit-video-button">
                 <Upload className="h-4 w-4 mr-2" />
                 Yükle
               </Button>
@@ -433,7 +433,7 @@ export const AdminContent = () => {
                   value={designForm.project_name}
                   onChange={(e) => setDesignForm({ ...designForm, project_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="Örn: Logo Tasarımı"
                   data-testid="design-project-name-input"
                 />
@@ -446,7 +446,7 @@ export const AdminContent = () => {
                   value={designForm.file_name}
                   onChange={(e) => setDesignForm({ ...designForm, file_name: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="design.jpg"
                   data-testid="design-file-name-input"
                 />
@@ -459,7 +459,7 @@ export const AdminContent = () => {
                   value={designForm.file_url}
                   onChange={(e) => setDesignForm({ ...designForm, file_url: e.target.value })}
                   required
-                  className="border-blue-200"
+                  className="border-slate-300"
                   placeholder="https://..."
                   data-testid="design-file-url-input"
                 />
@@ -474,7 +474,7 @@ export const AdminContent = () => {
                     value={designForm.file_size}
                     onChange={(e) => setDesignForm({ ...designForm, file_size: parseInt(e.target.value) })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                   />
                 </div>
 
@@ -486,7 +486,7 @@ export const AdminContent = () => {
                     value={designForm.version}
                     onChange={(e) => setDesignForm({ ...designForm, version: parseInt(e.target.value) })}
                     required
-                    className="border-blue-200"
+                    className="border-slate-300"
                   />
                 </div>
               </div>
@@ -497,7 +497,7 @@ export const AdminContent = () => {
                   id="design_notes"
                   value={designForm.notes}
                   onChange={(e) => setDesignForm({ ...designForm, notes: e.target.value })}
-                  className="border-blue-200"
+                  className="border-slate-300"
                   rows={3}
                 />
               </div>
@@ -507,7 +507,7 @@ export const AdminContent = () => {
               <Button type="button" variant="outline" onClick={() => setShowDesignDialog(false)}>
                 {tr.common.cancel}
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" data-testid="submit-design-button">
+              <Button type="submit" className="bg-slate-900 hover:bg-black" data-testid="submit-design-button">
                 <Upload className="h-4 w-4 mr-2" />
                 Yükle
               </Button>

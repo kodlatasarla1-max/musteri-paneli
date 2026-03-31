@@ -163,7 +163,7 @@ export const AdminStaff = () => {
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
@@ -184,7 +184,7 @@ export const AdminStaff = () => {
             resetForm();
             setShowDialog(true);
           }} 
-          className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" 
+          className="bg-slate-900 hover:bg-black w-full sm:w-auto" 
           data-testid="add-staff-button"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -194,13 +194,13 @@ export const AdminStaff = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
-              <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-slate-900 rounded-xl">
+              <User className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-semibold text-blue-900">{staff.length}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900">{staff.length}</p>
               <p className="text-xs sm:text-sm text-slate-600">Toplam Personel</p>
             </div>
           </div>
@@ -221,11 +221,11 @@ export const AdminStaff = () => {
         </Card>
       </div>
 
-      <Card className="border-blue-100 shadow-sm overflow-hidden">
+      <Card className="border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-50">
+              <TableRow className="bg-slate-50">
                 <TableHead className="whitespace-nowrap">{tr.admin.staff.fullName}</TableHead>
                 <TableHead className="whitespace-nowrap">{tr.admin.staff.email}</TableHead>
                 <TableHead className="whitespace-nowrap hidden sm:table-cell">Durum</TableHead>
@@ -247,11 +247,11 @@ export const AdminStaff = () => {
                   <TableRow key={member.id} data-testid={`staff-row-${member.id}`}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 flex items-center justify-center">
                           {member.avatar_url ? (
                             <img src={member.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                            <User className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
                           )}
                         </div>
                         <div>
@@ -276,11 +276,11 @@ export const AdminStaff = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => openPermDialog(member)}
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                        className="border-slate-300 text-slate-900 hover:bg-slate-50"
                       >
                         <Shield className="h-4 w-4 mr-1" />
                         <span className="hidden lg:inline">İzinler</span>
-                        <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700">
+                        <Badge variant="secondary" className="ml-1 bg-slate-100 text-slate-700">
                           {getPermissionCount(member)}
                         </Badge>
                       </Button>
@@ -291,7 +291,7 @@ export const AdminStaff = () => {
                           size="sm" 
                           variant="outline" 
                           onClick={() => openPermDialog(member)}
-                          className="border-blue-200 text-blue-600 hover:bg-blue-50 md:hidden"
+                          className="border-slate-300 text-slate-900 hover:bg-slate-50 md:hidden"
                         >
                           <Shield className="h-4 w-4" />
                         </Button>
@@ -299,7 +299,7 @@ export const AdminStaff = () => {
                           size="sm" 
                           variant="outline" 
                           onClick={() => openEditDialog(member)}
-                          className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                          className="border-slate-300 text-slate-900 hover:bg-slate-50"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -345,7 +345,7 @@ export const AdminStaff = () => {
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   required
-                  className="border-blue-200 focus:border-blue-500"
+                  className="border-slate-300 focus:border-slate-900"
                   data-testid="full-name-input"
                   placeholder="Ad Soyad"
                 />
@@ -361,7 +361,7 @@ export const AdminStaff = () => {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
-                      className="border-blue-200 focus:border-blue-500"
+                      className="border-slate-300 focus:border-slate-900"
                       data-testid="email-input"
                       placeholder="email@ornek.com"
                     />
@@ -375,7 +375,7 @@ export const AdminStaff = () => {
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
                       minLength={6}
-                      className="border-blue-200 focus:border-blue-500"
+                      className="border-slate-300 focus:border-slate-900"
                       data-testid="password-input"
                       placeholder="En az 6 karakter"
                     />
@@ -389,7 +389,7 @@ export const AdminStaff = () => {
               </Button>
               <Button 
                 type="submit" 
-                className="bg-blue-600 hover:bg-blue-700" 
+                className="bg-slate-900 hover:bg-black" 
                 data-testid="submit-staff-button"
                 disabled={submitting}
               >
@@ -476,7 +476,7 @@ export const AdminStaff = () => {
             </Button>
             <Button 
               onClick={handlePermissions} 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-slate-900 hover:bg-black"
               disabled={submitting}
             >
               {submitting ? 'Kaydediliyor...' : tr.common.save}

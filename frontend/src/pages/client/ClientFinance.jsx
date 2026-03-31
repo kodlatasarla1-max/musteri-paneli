@@ -235,7 +235,7 @@ export const ClientFinance = () => {
             <Download className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">CSV İndir</span>
           </Button>
-          <Button onClick={() => { resetForm(); setEditingTransaction(null); setShowAddDialog(true); }} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => { resetForm(); setEditingTransaction(null); setShowAddDialog(true); }} className="bg-slate-900 hover:bg-black">
             <Plus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">İşlem Ekle</span>
           </Button>
@@ -268,13 +268,13 @@ export const ClientFinance = () => {
           <p className="text-sm text-slate-600 mt-1">Toplam Gider</p>
         </Card>
 
-        <Card className={`p-4 lg:p-6 bg-gradient-to-br ${summary.net_profit >= 0 ? 'from-blue-50 to-white border-blue-100' : 'from-orange-50 to-white border-orange-100'}`}>
+        <Card className={`p-4 lg:p-6 bg-gradient-to-br ${summary.net_profit >= 0 ? 'from-slate-50 to-white border-slate-200' : 'from-orange-50 to-white border-orange-100'}`}>
           <div className="flex items-center gap-3 mb-3">
-            <div className={`p-2 lg:p-3 rounded-lg ${summary.net_profit >= 0 ? 'bg-blue-100' : 'bg-orange-100'}`}>
-              <Wallet className={`h-5 w-5 lg:h-6 lg:w-6 ${summary.net_profit >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+            <div className={`p-2 lg:p-3 rounded-lg ${summary.net_profit >= 0 ? 'bg-slate-900' : 'bg-orange-100'}`}>
+              <Wallet className={`h-5 w-5 lg:h-6 lg:w-6 ${summary.net_profit >= 0 ? 'text-white' : 'text-orange-600'}`} />
             </div>
           </div>
-          <p className={`text-2xl lg:text-3xl font-semibold ${summary.net_profit >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>
+          <p className={`text-2xl lg:text-3xl font-semibold ${summary.net_profit >= 0 ? 'text-slate-900' : 'text-orange-900'}`}>
             ₺{summary.net_profit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-sm text-slate-600 mt-1">Net Kar</p>
@@ -285,7 +285,7 @@ export const ClientFinance = () => {
       {monthlySummary.length > 0 && (
         <Card className="p-4 lg:p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <BarChart3 className="h-5 w-5 text-slate-900" />
             <h3 className="font-medium text-slate-900">Aylık Özet (Son 12 Ay)</h3>
           </div>
           <div className="overflow-x-auto">
@@ -368,7 +368,7 @@ export const ClientFinance = () => {
                 <Wallet className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-slate-900 mb-2">Henüz işlem yok</h3>
                 <p className="text-slate-600 mb-4">İlk işleminizi ekleyerek başlayın.</p>
-                <Button onClick={() => { resetForm(); setShowAddDialog(true); }} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => { resetForm(); setShowAddDialog(true); }} className="bg-slate-900 hover:bg-black">
                   <Plus className="h-4 w-4 mr-2" />
                   İşlem Ekle
                 </Button>
@@ -506,7 +506,7 @@ export const ClientFinance = () => {
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-slate-900 hover:bg-black"
               >
                 {saving ? 'Kaydediliyor...' : 'Kaydet'}
               </Button>
