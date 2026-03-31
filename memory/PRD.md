@@ -3,69 +3,75 @@
 ## Overview
 Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, içerik üretimi, makbuz onayı ve reklam raporlama özelliklerini tek bir platformda birleştirir.
 
-## Completed - December 2025
+## Technical Stack
+- **Frontend:** React, Tailwind CSS, shadcn/ui
+- **Backend:** FastAPI (Python)
+- **Database:** Supabase (PostgreSQL)
+- **Authentication:** Supabase Auth with JWT
+- **Storage:** Supabase Storage
 
-### Phase 1: Supabase Migration (COMPLETED ✅)
+## Completed Features ✅
+
+### Phase 1: Core Infrastructure (December 2025)
 - [x] Supabase veritabanı entegrasyonu
-- [x] SQL şeması oluşturuldu (profiles, clients, services, receipts, videos, designs, vb.)
-- [x] RLS (Row Level Security) politikaları aktif
+- [x] SQL şeması (profiles, clients, services, receipts, videos, designs, vb.)
+- [x] RLS (Row Level Security) politikaları
 - [x] Backend tamamen Supabase'e migrate edildi
 - [x] Supabase Auth entegrasyonu (login/signup)
 - [x] Admin kullanıcısı oluşturuldu (admin@agency.com / admin123)
 
-### Phase 2: Core Features (COMPLETED ✅)
-- [x] Admin Dashboard - istatistikler (müşteri, video, tasarım sayıları)
+### Phase 2: Admin Panel (December 2025)
+- [x] Admin Dashboard - istatistikler kartları
 - [x] Müşteri Yönetimi - CRUD operasyonları
 - [x] Hizmet Yönetimi - 6 varsayılan hizmet
 - [x] Makbuz Yönetimi - yükleme, onay/red, 30 gün erişim aktivasyonu
 - [x] Sidebar navigation - badge ile bekleyen makbuz sayısı
-- [x] Tablo başlıkları Türkçeye çevrildi
-- [x] Para birimi TRY (₺)
+- [x] Türkçe çeviriler
 
-### Testing Status
-- Backend: 100% (19/19 test geçti)
-- Frontend: 95% çalışıyor
-- Test raporu: /app/test_reports/iteration_1.json
+### Phase 3: Client Portal (December 2025)
+- [x] Client Dashboard - erişim durumu bannerları (Aktif/Bekleyen/Süresi Doldu)
+- [x] Makbuz Yükleme - drag & drop, URL yapıştırma
+- [x] Muhasebe Modülü - gelir/gider takibi, aylık grafik
+- [x] Hizmet durumu görüntüleme (kilitli/aktif)
 
-## In Progress
+### Phase 4: UX Improvements (December 2025)
+- [x] Mobile hamburger menü - CSS-based responsive
+- [x] Dialog accessibility - aria-describedby tüm dialog'larda
+- [x] Tutarlı renk sistemi - sarı/lime sorunu çözüldü
+- [x] Tam responsive layout (mobil + masaüstü)
 
-### Known Issues (LOW Priority)
-1. Sarı arka plan CSS sorunu - bazı kartlarda görünüyor (CSS cache)
-2. "İçerik" navigation timeout - race condition
+## In Progress 🔄
+None - All critical features implemented
+
+## Testing Status
+- **Backend:** 100% (19/19 test geçti)
+- **Frontend:** 98% çalışıyor
+- **Test raporu:** /app/test_reports/iteration_2.json
+- **Son test tarihi:** December 2025
 
 ## Backlog (P1)
 
 ### Admin Features
 - [ ] Personel (Staff) yönetimi sayfası
 - [ ] İçerik yönetimi (video/tasarım yükleme)
-- [ ] Takvim etkinlikleri CRUD
+- [ ] Takvim etkinlikleri tam CRUD
 - [ ] Reklam raporları görüntüleme
 - [ ] Kampanya oluşturma
-- [ ] Finans modülü (gelir/gider/kâr)
 - [ ] Meta Ads API entegrasyonu
 
 ### Client Features
-- [ ] Client Dashboard
 - [ ] Video galeri görüntüleme
 - [ ] Tasarım galeri görüntüleme
-- [ ] Makbuz yükleme
-- [ ] Profil düzenleme
+- [ ] Profil düzenleme ve avatar yükleme
 - [ ] Bildirim merkezi
 
 ## Future (P2)
-
-- [ ] Staff rolü ve izinleri
-- [ ] Revizyon sistemi
+- [ ] Staff rolü ve detaylı izinler
+- [ ] Revizyon sistemi (içerik onay/revizyon)
 - [ ] WhatsApp bildirimleri
 - [ ] Meta Ads OAuth entegrasyonu
 - [ ] E-posta bildirimleri
-
-## Technical Stack
-- **Frontend:** React, Tailwind CSS, shadcn/ui
-- **Backend:** FastAPI (Python)
-- **Database:** Supabase (PostgreSQL)
-- **Authentication:** Supabase Auth with JWT
-- **Storage:** Supabase Storage (planned)
+- [ ] Aktivite logları detay sayfası
 
 ## API Endpoints
 All endpoints prefixed with `/api`
@@ -77,9 +83,14 @@ All endpoints prefixed with `/api`
 
 ### Clients
 - GET /clients
+- GET /clients/{id}
 - POST /clients
 - PUT /clients/{id}
 - DELETE /clients/{id}
+
+### Client Access
+- GET /client-access/{client_id}
+- GET /client-access/{client_id}/history
 
 ### Services
 - GET /services
@@ -88,26 +99,63 @@ All endpoints prefixed with `/api`
 
 ### Receipts
 - GET /receipts
-- GET /receipts/{client_id}
+- GET /receipts/client/{client_id}
 - GET /receipts/pending/count
 - POST /receipts
 - PUT /receipts/{id}/approve
+- DELETE /receipts/{id}
+
+### Client Finance
+- GET /client-finance/categories
+- GET /client-finance/{client_id}
+- GET /client-finance/{client_id}/monthly-summary
+- POST /client-finance/{client_id}
+- PUT /client-finance/{client_id}/{id}
+- DELETE /client-finance/{client_id}/{id}
+- GET /client-finance/{client_id}/export
 
 ### Content
 - GET /videos/{client_id}
 - POST /videos
+- PUT /videos/{id}/status
 - GET /designs/{client_id}
 - POST /designs
+- PUT /designs/{id}/status
 
 ### Other
 - GET /stats/admin-dashboard
+- GET /stats/client-dashboard/{client_id}
 - GET /calendar-events
+- GET /calendar-events/{client_id}
+- POST /calendar-events
+- DELETE /calendar-events/{id}
 - GET /campaigns
+- POST /campaigns
 - GET /notifications
+- GET /notifications/unread-count
+- PUT /notifications/{id}/read
+- PUT /notifications/mark-all-read
 - GET /activity-logs
 
 ## Database Schema
-See `/app/supabase/migrations/001_initial_schema.sql`
+See:
+- `/app/supabase/migrations/001_initial_schema.sql`
+- `/app/supabase/migrations/002_client_finance_access.sql`
+
+### Core Tables
+- profiles (user info, role, client_id)
+- clients (company info, status, access tracking)
+- services (6 default services)
+- client_services (mapping table)
+- receipts (payment receipts with approval workflow)
+- client_access (30-day access periods)
+- client_finance_transactions (income/expense tracking)
+- finance_categories (12 default categories)
+- videos, designs (content management)
+- calendar_events
+- notifications
+- audit_logs
+- campaigns
 
 ## Environment Variables
 
@@ -120,3 +168,23 @@ See `/app/supabase/migrations/001_initial_schema.sql`
 - REACT_APP_BACKEND_URL
 - REACT_APP_SUPABASE_URL
 - REACT_APP_SUPABASE_ANON_KEY
+
+## Login Credentials
+- **Admin:** admin@agency.com / admin123
+
+## Key Business Logic
+
+### Receipt-Based Access Flow
+1. Client uploads payment receipt
+2. Admin reviews in receipts page
+3. Admin approves/rejects
+4. If approved:
+   - 30-day access period created/extended
+   - Client status set to 'active'
+   - Notification sent to client
+   - Finance transaction created (agency income)
+
+### Client Status
+- **pending:** Receipt uploaded, awaiting approval
+- **active:** Has valid access period
+- **expired:** No active access period
