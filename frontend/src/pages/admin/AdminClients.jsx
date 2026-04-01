@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Key, Mail, User } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Badge } from '../../components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,10 @@ export const AdminClients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [selectedClientForPassword, setSelectedClientForPassword] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [formData, setFormData] = useState({
     company_name: '',
@@ -112,6 +117,67 @@ export const AdminClients = () => {
     setShowDialog(true);
   };
 
+  // Password management functions
+  const handleCreateUser = async (clientId) => {
+    setCreatingUser(true);
+    try {
+      const response = await apiClient.post(`/clients/${clientId}/create-user`);
+      toast.success(`Kullanıcı oluşturuldu! Şifre: ${response.data.password}`);
+      if (response.data.email_sent) {
+        toast.success('Giriş bilgileri e-posta ile gönderildi');
+      }
+      loadClients();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kullanıcı oluşturulamadı');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const handleOpenPasswordDialog = (client) => {
+    setSelectedClientForPassword(client);
+    setNewPassword('');
+    setShowPasswordDialog(true);
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Şifre en az 6 karakter olmalıdır');
+      return;
+    }
+    try {
+      await apiClient.put(`/clients/${selectedClientForPassword.id}/password`, {
+        new_password: newPassword
+      });
+      toast.success('Şifre güncellendi');
+      setShowPasswordDialog(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Şifre güncellenemedi');
+    }
+  };
+
+  const handleSendCredentials = async (clientId) => {
+    try {
+      const response = await apiClient.post(`/clients/${clientId}/send-credentials`);
+      if (response.data.success) {
+        toast.success('Giriş bilgileri e-posta ile gönderildi');
+      } else {
+        toast.info(`E-posta gönderilemedi. Yeni şifre: ${response.data.new_password}`);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'İşlem başarısız');
+    }
+  };
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(password);
+  };
+
   if (loading) {
     return <div className="p-4 lg:p-8">Loading...</div>;
   }
@@ -193,6 +259,7 @@ export const AdminClients = () => {
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.contactName}</TableHead>
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.industry}</TableHead>
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.status}</TableHead>
+              <TableHead className="text-slate-900 font-semibold">Hesap</TableHead>
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.accessDays}</TableHead>
               <TableHead className="text-right text-slate-900 font-semibold">{tr.common.actions}</TableHead>
             </TableRow>
@@ -200,7 +267,7 @@ export const AdminClients = () => {
           <TableBody>
             {clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-600">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-600">
                   {tr.admin.clients.noClients}
                 </TableCell>
               </TableRow>
@@ -223,6 +290,46 @@ export const AdminClients = () => {
                     }`}>
                       {tr.status[client.status] || client.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {client.user_id ? (
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <User className="h-3 w-3 mr-1" />
+                          Aktif
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenPasswordDialog(client)}
+                          className="h-7 w-7 p-0"
+                          title="Şifre Değiştir"
+                        >
+                          <Key className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSendCredentials(client.id)}
+                          className="h-7 w-7 p-0"
+                          title="Bilgileri Gönder"
+                        >
+                          <Mail className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCreateUser(client.id)}
+                        disabled={creatingUser}
+                        className="border-slate-300 text-slate-700 text-xs"
+                        data-testid={`create-user-${client.id}`}
+                      >
+                        <Key className="h-3 w-3 mr-1" />
+                        Hesap Oluştur
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>{client.access_days_remaining} gün</TableCell>
                   <TableCell className="text-right">
@@ -333,6 +440,49 @@ export const AdminClients = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Müşteri Şifresi Değiştir</DialogTitle>
+            <DialogDescription>
+              {selectedClientForPassword?.company_name} - {selectedClientForPassword?.contact_email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Yeni Şifre</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="En az 6 karakter"
+                  className="border-slate-300"
+                  data-testid="new-password-input"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={generatePassword}
+                  className="border-slate-300"
+                >
+                  Oluştur
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
+              İptal
+            </Button>
+            <Button onClick={handleUpdatePassword} className="bg-slate-900 hover:bg-black">
+              Şifreyi Güncelle
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

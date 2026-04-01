@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Video, Image, BarChart3, Globe, ShoppingBag, Users, 
   LogOut, Share2, Calendar, Receipt, Megaphone, Activity, Lock, Bell, 
-  Menu, X, ChevronRight, Wallet, User, MessageSquare
+  Menu, X, ChevronRight, Wallet, User, MessageSquare, Mail, Settings
 } from 'lucide-react';
 import { getUser, logout } from '../utils/auth';
 import { Button } from './ui/button';
@@ -128,6 +128,7 @@ export const Layout = ({ role, clientId }) => {
     { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
     { icon: Activity, label: tr.sidebar.activityLogs, path: '/admin/logs' },
     { icon: Bell, label: 'Bildirimler', path: '/admin/notifications', badge: unreadNotifications },
+    { icon: Mail, label: 'E-posta Ayarları', path: '/admin/mail-settings' },
   ];
 
   const clientNav = [

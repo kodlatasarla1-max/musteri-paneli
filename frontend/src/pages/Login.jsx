@@ -110,13 +110,6 @@ export const Login = () => {
               {loading ? tr.auth.signingIn : tr.auth.signIn}
             </Button>
           </form>
-
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <p className="text-sm text-slate-900 font-semibold mb-2">Demo Giriş Bilgileri:</p>
-            <p className="text-sm text-slate-600">E-posta: <span className="font-mono text-slate-900">admin@agency.com</span></p>
-            <p className="text-sm text-slate-600">Şifre: <span className="font-mono text-slate-900">admin123</span></p>
-          </div>
         </div>
       </div>
 

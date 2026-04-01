@@ -25,6 +25,7 @@ import { AdminReceipts } from "./pages/admin/AdminReceipts";
 import { AdminRevisions } from "./pages/admin/AdminRevisions";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
 import { AdminLogs } from "./pages/admin/AdminLogs";
+import AdminMailSettings from "./pages/admin/AdminMailSettings";
 import { NotificationCenter } from "./pages/shared/NotificationCenter";
 import { NoPermission } from "./pages/shared/NoPermission";
 import { getUser } from "./utils/auth";
@@ -107,6 +108,7 @@ function App() {
             <Route path="campaigns" element={<AdminCampaigns />} />
             <Route path="logs" element={<AdminLogs />} />
             <Route path="notifications" element={<NotificationCenter userRole="admin" />} />
+            <Route path="mail-settings" element={<AdminMailSettings />} />
           </Route>
 
           {/* Staff Routes - Permission-based access */}

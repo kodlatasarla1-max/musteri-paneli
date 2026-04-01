@@ -136,7 +136,7 @@ export const ClientDashboard = () => {
       {hasAccess && (
         <div className={`mb-6 p-4 lg:p-6 rounded-xl border-2 ${
           isExpiringSoon 
-            ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50' 
+            ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50' 
             : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50'
         }`} data-testid="access-active-banner">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">

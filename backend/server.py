@@ -7,6 +7,9 @@ import os
 import logging
 import secrets
 import httpx
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlencode
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
@@ -188,6 +191,34 @@ class MetaAccountCreate(BaseModel):
     ad_account_id: str
     account_name: Optional[str] = None
 
+# =====================================================
+# MAIL SYSTEM MODELS
+# =====================================================
+class MailSettingsUpdate(BaseModel):
+    provider: str  # 'smtp' or 'resend'
+    # SMTP Settings
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_use_tls: Optional[bool] = True
+    smtp_from_email: Optional[str] = None
+    smtp_from_name: Optional[str] = "Mova Dijital"
+    # Resend Settings
+    resend_api_key: Optional[str] = None
+    resend_from_email: Optional[str] = None
+
+class MailTemplateUpdate(BaseModel):
+    template_type: str  # 'welcome', 'receipt_approved', 'content_uploaded', etc.
+    subject: str
+    body_html: str
+
+class ClientPasswordUpdate(BaseModel):
+    new_password: str
+
+class SendTestEmail(BaseModel):
+    to_email: EmailStr
+
 
 # =====================================================
 # AUTH HELPERS
@@ -311,11 +342,48 @@ def create_notification(user_id: str, type: str, title: str, message: str, link:
 
 
 def notify_client_users(client_id: str, type: str, title: str, message: str, link: str = None):
-    """Send notification to all users belonging to a client"""
+    """Send notification and email to all users belonging to a client"""
     try:
+        # Get client info for email
+        client_info = supabase.table('clients').select('company_name, contact_name, contact_email').eq('id', client_id).single().execute()
+        
+        # Get client users for in-app notification
         client_users = supabase.table('profiles').select('id').eq('client_id', client_id).execute()
         for cu in client_users.data:
             create_notification(cu['id'], type, title, message, link)
+        
+        # Send email notification
+        import asyncio
+        if client_info.data:
+            client_data = client_info.data
+            template_type = None
+            template_vars = {
+                'client_name': client_data.get('contact_name', ''),
+                'portal_url': os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+            }
+            
+            if type == 'video_uploaded' or type == 'design_uploaded':
+                template_type = 'content_uploaded'
+                template_vars['content_type'] = 'video' if 'video' in type else 'tasarım'
+                template_vars['content_title'] = title
+            elif type == 'event_created':
+                template_type = 'event_created'
+                template_vars['event_title'] = title
+                template_vars['event_date'] = message
+                template_vars['event_location'] = ''
+            
+            if template_type:
+                template = get_mail_template(template_type)
+                if template.get('body_html'):
+                    email_body = render_template(template.get('body_html', ''), template_vars)
+                    # Run async send_email in sync context
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    loop.run_until_complete(send_email(client_data.get('contact_email'), template.get('subject', title), email_body))
     except Exception as e:
         logging.error(f"Notify client users error: {e}")
 
@@ -2692,6 +2760,500 @@ async def refresh_meta_token(client_id: str, user: dict = Depends(require_admin_
     except Exception as e:
         logging.error(f"Meta token refresh error: {e}")
         raise HTTPException(status_code=500, detail="Token yenilenemedi")
+
+
+# =====================================================
+# MAIL SYSTEM - HELPERS
+# =====================================================
+def get_mail_settings():
+    """Get mail settings from database"""
+    try:
+        response = supabase.table('system_settings').select('*').eq('setting_key', 'mail_settings').single().execute()
+        if response.data:
+            import json
+            return json.loads(response.data['setting_value'])
+        return None
+    except Exception:
+        return None
+
+def save_mail_settings(settings: dict):
+    """Save mail settings to database"""
+    import json
+    try:
+        existing = supabase.table('system_settings').select('id').eq('setting_key', 'mail_settings').execute()
+        if existing.data:
+            supabase.table('system_settings').update({
+                'setting_value': json.dumps(settings),
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }).eq('setting_key', 'mail_settings').execute()
+        else:
+            supabase.table('system_settings').insert({
+                'setting_key': 'mail_settings',
+                'setting_value': json.dumps(settings),
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }).execute()
+        return True
+    except Exception as e:
+        logging.error(f"Save mail settings error: {e}")
+        return False
+
+def get_mail_template(template_type: str) -> dict:
+    """Get mail template from database"""
+    try:
+        response = supabase.table('mail_templates').select('*').eq('template_type', template_type).single().execute()
+        if response.data:
+            return response.data
+        # Return default templates
+        defaults = {
+            'welcome': {
+                'subject': 'Mova Dijital Portalına Hoş Geldiniz',
+                'body_html': '''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #0f172a; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Hoş Geldiniz, {{client_name}}!</h2>
+                        <p style="color: #475569;">Mova Dijital müşteri portalına kaydınız başarıyla oluşturulmuştur.</p>
+                        <p style="color: #475569;"><strong>Giriş Bilgileriniz:</strong></p>
+                        <p style="color: #475569;">E-posta: {{email}}</p>
+                        <p style="color: #475569;">Şifre: {{password}}</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{{login_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Giriş Yap</a>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 12px;">Güvenliğiniz için ilk girişinizde şifrenizi değiştirmenizi öneririz.</p>
+                    </div>
+                </div>
+                '''
+            },
+            'receipt_approved': {
+                'subject': 'Makbuzunuz Onaylandı - Mova Dijital',
+                'body_html': '''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #0f172a; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Makbuzunuz Onaylandı!</h2>
+                        <p style="color: #475569;">Sayın {{client_name}},</p>
+                        <p style="color: #475569;">Yüklediğiniz makbuz onaylanmıştır. Portal erişiminiz 30 gün boyunca aktif olacaktır.</p>
+                        <p style="color: #475569;"><strong>Erişim Bitiş Tarihi:</strong> {{expiry_date}}</p>
+                    </div>
+                </div>
+                '''
+            },
+            'content_uploaded': {
+                'subject': 'Yeni İçerik Yüklendi - Mova Dijital',
+                'body_html': '''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #0f172a; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Yeni İçerik Eklendi!</h2>
+                        <p style="color: #475569;">Sayın {{client_name}},</p>
+                        <p style="color: #475569;">Hesabınıza yeni bir {{content_type}} yüklenmiştir: <strong>{{content_title}}</strong></p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">İçeriği Görüntüle</a>
+                        </div>
+                    </div>
+                </div>
+                '''
+            },
+            'event_created': {
+                'subject': 'Yeni Etkinlik Planlandı - Mova Dijital',
+                'body_html': '''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #0f172a; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Yeni Etkinlik!</h2>
+                        <p style="color: #475569;">Sayın {{client_name}},</p>
+                        <p style="color: #475569;">Sizin için yeni bir etkinlik planlanmıştır:</p>
+                        <p style="color: #475569;"><strong>{{event_title}}</strong></p>
+                        <p style="color: #475569;">Tarih: {{event_date}}</p>
+                        <p style="color: #475569;">Konum: {{event_location}}</p>
+                    </div>
+                </div>
+                '''
+            }
+        }
+        return defaults.get(template_type, {'subject': '', 'body_html': ''})
+    except Exception:
+        return {'subject': '', 'body_html': ''}
+
+async def send_email(to_email: str, subject: str, body_html: str) -> bool:
+    """Send email using configured provider (SMTP or Resend)"""
+    settings = get_mail_settings()
+    if not settings:
+        logging.warning("Mail settings not configured")
+        return False
+    
+    provider = settings.get('provider', 'smtp')
+    
+    try:
+        if provider == 'resend':
+            return await send_email_resend(to_email, subject, body_html, settings)
+        else:
+            return await send_email_smtp(to_email, subject, body_html, settings)
+    except Exception as e:
+        logging.error(f"Send email error: {e}")
+        return False
+
+async def send_email_smtp(to_email: str, subject: str, body_html: str, settings: dict) -> bool:
+    """Send email via SMTP"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"{settings.get('smtp_from_name', 'Mova Dijital')} <{settings.get('smtp_from_email')}>"
+        msg['To'] = to_email
+        
+        html_part = MIMEText(body_html, 'html')
+        msg.attach(html_part)
+        
+        smtp_host = settings.get('smtp_host')
+        smtp_port = settings.get('smtp_port', 587)
+        smtp_username = settings.get('smtp_username')
+        smtp_password = settings.get('smtp_password')
+        use_tls = settings.get('smtp_use_tls', True)
+        
+        if use_tls:
+            server = smtplib.SMTP(smtp_host, smtp_port)
+            server.starttls()
+        else:
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
+        
+        server.login(smtp_username, smtp_password)
+        server.sendmail(settings.get('smtp_from_email'), to_email, msg.as_string())
+        server.quit()
+        
+        logging.info(f"Email sent via SMTP to {to_email}")
+        return True
+    except Exception as e:
+        logging.error(f"SMTP send error: {e}")
+        return False
+
+async def send_email_resend(to_email: str, subject: str, body_html: str, settings: dict) -> bool:
+    """Send email via Resend API"""
+    try:
+        api_key = settings.get('resend_api_key')
+        from_email = settings.get('resend_from_email', 'noreply@resend.dev')
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": from_email,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html
+                }
+            )
+        
+        if response.status_code == 200:
+            logging.info(f"Email sent via Resend to {to_email}")
+            return True
+        else:
+            logging.error(f"Resend API error: {response.text}")
+            return False
+    except Exception as e:
+        logging.error(f"Resend send error: {e}")
+        return False
+
+def render_template(template_html: str, variables: dict) -> str:
+    """Replace template variables with actual values"""
+    result = template_html
+    for key, value in variables.items():
+        result = result.replace(f"{{{{{key}}}}}", str(value))
+    return result
+
+
+# =====================================================
+# MAIL SETTINGS ENDPOINTS
+# =====================================================
+@api_router.get("/mail/settings")
+async def get_mail_settings_endpoint(user: dict = Depends(require_admin)):
+    """Get current mail settings"""
+    settings = get_mail_settings()
+    if settings:
+        # Hide sensitive data
+        if settings.get('smtp_password'):
+            settings['smtp_password'] = '********'
+        if settings.get('resend_api_key'):
+            settings['resend_api_key'] = settings['resend_api_key'][:8] + '********'
+    return {"settings": settings}
+
+@api_router.post("/mail/settings")
+async def update_mail_settings_endpoint(data: MailSettingsUpdate, user: dict = Depends(require_admin)):
+    """Update mail settings"""
+    settings = data.dict(exclude_none=True)
+    
+    # Preserve existing sensitive data if masked
+    existing = get_mail_settings() or {}
+    if settings.get('smtp_password') == '********':
+        settings['smtp_password'] = existing.get('smtp_password')
+    if settings.get('resend_api_key', '').endswith('********'):
+        settings['resend_api_key'] = existing.get('resend_api_key')
+    
+    if save_mail_settings(settings):
+        return {"message": "Mail ayarları kaydedildi", "success": True}
+    raise HTTPException(status_code=500, detail="Ayarlar kaydedilemedi")
+
+@api_router.post("/mail/test")
+async def send_test_email_endpoint(data: SendTestEmail, user: dict = Depends(require_admin)):
+    """Send a test email"""
+    success = await send_email(
+        data.to_email,
+        "Mova Dijital - Test E-postası",
+        """
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #0f172a; padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+            </div>
+            <div style="padding: 30px; background: #f8fafc;">
+                <h2 style="color: #0f172a;">Test E-postası Başarılı!</h2>
+                <p style="color: #475569;">Mail ayarlarınız doğru yapılandırılmış. E-posta gönderimi çalışıyor.</p>
+            </div>
+        </div>
+        """
+    )
+    if success:
+        return {"message": "Test e-postası gönderildi", "success": True}
+    raise HTTPException(status_code=500, detail="E-posta gönderilemedi. Ayarları kontrol edin.")
+
+
+# =====================================================
+# MAIL TEMPLATES ENDPOINTS
+# =====================================================
+@api_router.get("/mail/templates")
+async def get_mail_templates(user: dict = Depends(require_admin)):
+    """Get all mail templates"""
+    try:
+        response = supabase.table('mail_templates').select('*').execute()
+        templates = response.data if response.data else []
+        
+        # Add defaults if not in database
+        default_types = ['welcome', 'receipt_approved', 'content_uploaded', 'event_created']
+        existing_types = [t['template_type'] for t in templates]
+        
+        for ttype in default_types:
+            if ttype not in existing_types:
+                default_template = get_mail_template(ttype)
+                templates.append({
+                    'template_type': ttype,
+                    'subject': default_template.get('subject', ''),
+                    'body_html': default_template.get('body_html', '')
+                })
+        
+        return {"templates": templates}
+    except Exception as e:
+        logging.error(f"Get templates error: {e}")
+        return {"templates": []}
+
+@api_router.post("/mail/templates")
+async def save_mail_template(data: MailTemplateUpdate, user: dict = Depends(require_admin)):
+    """Save or update a mail template"""
+    try:
+        existing = supabase.table('mail_templates').select('id').eq('template_type', data.template_type).execute()
+        
+        if existing.data:
+            supabase.table('mail_templates').update({
+                'subject': data.subject,
+                'body_html': data.body_html,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }).eq('template_type', data.template_type).execute()
+        else:
+            supabase.table('mail_templates').insert({
+                'template_type': data.template_type,
+                'subject': data.subject,
+                'body_html': data.body_html,
+                'created_at': datetime.now(timezone.utc).isoformat()
+            }).execute()
+        
+        return {"message": "Şablon kaydedildi", "success": True}
+    except Exception as e:
+        logging.error(f"Save template error: {e}")
+        raise HTTPException(status_code=500, detail="Şablon kaydedilemedi")
+
+
+# =====================================================
+# CLIENT PASSWORD MANAGEMENT
+# =====================================================
+@api_router.post("/clients/{client_id}/create-user")
+async def create_client_user(client_id: str, user: dict = Depends(require_admin)):
+    """Create a user account for a client and send welcome email"""
+    try:
+        # Get client info
+        client = supabase.table('clients').select('*').eq('id', client_id).single().execute()
+        if not client.data:
+            raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
+        
+        client_data = client.data
+        email = client_data['contact_email']
+        
+        # Check if user already exists
+        existing_profile = supabase.table('profiles').select('id').eq('email', email).execute()
+        if existing_profile.data:
+            raise HTTPException(status_code=400, detail="Bu e-posta ile zaten bir kullanıcı var")
+        
+        # Generate random password
+        import string
+        password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        
+        # Create user in Supabase Auth
+        auth_response = supabase.auth.admin.create_user({
+            "email": email,
+            "password": password,
+            "email_confirm": True
+        })
+        
+        if not auth_response.user:
+            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı")
+        
+        user_id = auth_response.user.id
+        
+        # Create profile
+        supabase.table('profiles').insert({
+            'id': user_id,
+            'email': email,
+            'full_name': client_data['contact_name'],
+            'role': 'client',
+            'client_id': client_id,
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        # Update client with user_id reference
+        supabase.table('clients').update({
+            'user_id': user_id,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', client_id).execute()
+        
+        # Send welcome email
+        template = get_mail_template('welcome')
+        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        
+        email_body = render_template(template.get('body_html', ''), {
+            'client_name': client_data['contact_name'],
+            'email': email,
+            'password': password,
+            'login_url': login_url
+        })
+        
+        email_sent = await send_email(email, template.get('subject', 'Hoş Geldiniz'), email_body)
+        
+        # Create audit log
+        supabase.table('audit_logs').insert({
+            'actor_user_id': user['id'],
+            'action': 'create_client_user',
+            'resource_type': 'client',
+            'resource_id': client_id,
+            'details': {'email': email, 'email_sent': email_sent},
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        return {
+            "message": "Kullanıcı hesabı oluşturuldu",
+            "user_id": user_id,
+            "email": email,
+            "password": password,
+            "email_sent": email_sent
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create client user error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/clients/{client_id}/password")
+async def update_client_password(client_id: str, data: ClientPasswordUpdate, user: dict = Depends(require_admin)):
+    """Update a client's password"""
+    try:
+        # Get client info
+        client = supabase.table('clients').select('user_id, contact_email, contact_name').eq('id', client_id).single().execute()
+        if not client.data:
+            raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
+        
+        user_id = client.data.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Bu müşterinin henüz bir kullanıcı hesabı yok")
+        
+        # Update password in Supabase Auth
+        supabase.auth.admin.update_user_by_id(user_id, {
+            "password": data.new_password
+        })
+        
+        # Create audit log
+        supabase.table('audit_logs').insert({
+            'actor_user_id': user['id'],
+            'action': 'update_client_password',
+            'resource_type': 'client',
+            'resource_id': client_id,
+            'details': {'email': client.data['contact_email']},
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        return {"message": "Şifre güncellendi", "success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Update client password error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/clients/{client_id}/send-credentials")
+async def send_client_credentials(client_id: str, user: dict = Depends(require_admin)):
+    """Send login credentials to client via email"""
+    try:
+        # Get client info
+        client = supabase.table('clients').select('*').eq('id', client_id).single().execute()
+        if not client.data:
+            raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
+        
+        client_data = client.data
+        user_id = client_data.get('user_id')
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Bu müşterinin henüz bir kullanıcı hesabı yok")
+        
+        # Generate new password
+        import string
+        new_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        
+        # Update password
+        supabase.auth.admin.update_user_by_id(user_id, {
+            "password": new_password
+        })
+        
+        # Send email with new credentials
+        template = get_mail_template('welcome')
+        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        
+        email_body = render_template(template.get('body_html', ''), {
+            'client_name': client_data['contact_name'],
+            'email': client_data['contact_email'],
+            'password': new_password,
+            'login_url': login_url
+        })
+        
+        email_sent = await send_email(
+            client_data['contact_email'],
+            template.get('subject', 'Giriş Bilgileriniz'),
+            email_body
+        )
+        
+        if email_sent:
+            return {"message": "Giriş bilgileri e-posta ile gönderildi", "success": True}
+        else:
+            return {"message": "E-posta gönderilemedi ama şifre güncellendi", "new_password": new_password, "success": False}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Send credentials error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =====================================================
