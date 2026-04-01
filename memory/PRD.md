@@ -28,6 +28,21 @@ Mova Dijital, dijital pazarlama ajansları için dahili bir işletim sistemidir.
 - [x] Tüm primary butonlar: bg-slate-900 hover:bg-black
 - [x] Tüm tablolar ve kartlar: slate-200/300 border renkleri
 - [x] Logo ikonu: "M" harfi
+- [x] **Demo giriş bilgileri kaldırıldı** (Login sayfasından)
+- [x] **Sarı renk (#ffff00) tamamen temizlendi**
+
+### Mail System (April 2026) ✅
+- [x] **SMTP Mail Server Ayarları** - Gmail, Yandex vb. için tam SMTP desteği
+- [x] **Resend API Desteği** - Modern mail API alternatifi
+- [x] **Mail Şablonları** - Hoş Geldin, Makbuz Onayı, İçerik Yüklendi, Etkinlik Planlandı
+- [x] **Test E-postası Gönderimi** - Ayarları test etmek için
+- [x] **Otomatik Mail Bildirimleri** - İçerik/etkinlik oluşturulduğunda müşteriye mail
+
+### Client Account Management (April 2026) ✅
+- [x] **Müşteri Hesabı Oluşturma** - Admin panelinden tek tıkla kullanıcı hesabı
+- [x] **Şifre Yönetimi** - Müşteri şifresi değiştirme/sıfırlama
+- [x] **Giriş Bilgilerini Gönder** - Müşteriye e-posta ile giriş bilgileri
+- [x] **Otomatik Hoşgeldin E-postası** - Hesap oluşturulduğunda otomatik mail
 
 ### Admin Panel
 - [x] Admin Dashboard
@@ -57,13 +72,25 @@ Mova Dijital, dijital pazarlama ajansları için dahili bir işletim sistemidir.
 - [x] **Meta Manual Token** - Manuel token girişi alternatifi
 
 ## Testing Status ✅
-- **Backend:** 100% (15/15 test geçti)
+- **Backend:** 100%
 - **Frontend:** 100%
-- **Test raporu:** /app/test_reports/iteration_6.json
+- **Test raporu:** /app/test_reports/iteration_7.json
 - **Retest gerekli:** Hayır
 - **Son test tarihi:** April 2026
 
 ## API Endpoints
+
+### Mail System (NEW)
+- GET /mail/settings - Mail ayarlarını getir
+- POST /mail/settings - Mail ayarlarını kaydet
+- POST /mail/test - Test e-postası gönder
+- GET /mail/templates - Şablonları listele
+- POST /mail/templates - Şablon kaydet/güncelle
+
+### Client Account Management (NEW)
+- POST /clients/{client_id}/create-user - Müşteri hesabı oluştur
+- PUT /clients/{client_id}/password - Şifre güncelle
+- POST /clients/{client_id}/send-credentials - Giriş bilgilerini gönder
 
 ### Auth & User
 - POST /auth/login
