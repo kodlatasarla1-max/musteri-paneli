@@ -1,7 +1,7 @@
-# Agency OS - Product Requirements Document
+# Mova Dijital - Product Requirements Document
 
 ## Overview
-Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı, revizyon sistemi, WhatsApp bildirimleri ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
+Mova Dijital, dijital pazarlama ajansları için dahili bir işletim sistemidir. Müşteri yönetimi, personel yönetimi, içerik üretimi, makbuz onayı, revizyon sistemi, WhatsApp bildirimleri ve Meta reklam entegrasyonu özelliklerini tek bir platformda birleştirir.
 
 ## Technical Stack
 - **Frontend:** React, Tailwind CSS, shadcn/ui
@@ -10,6 +10,7 @@ Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. M�
 - **Authentication:** Supabase Auth with JWT
 - **Storage:** Supabase Storage
 - **Integrations:** Twilio WhatsApp, Meta OAuth
+- **Theme:** Navy Blue (Lacivert), Beyaz, Siyah
 
 ## Completed Features ✅
 
@@ -18,6 +19,15 @@ Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. M�
 - [x] SQL şeması ve RLS politikaları
 - [x] Backend tamamen Supabase'e migrate edildi
 - [x] Supabase Auth entegrasyonu
+
+### Theme & Branding (April 2026) ✅
+- [x] **Marka Değişikliği:** "Ajans OS" → "Mova Dijital"
+- [x] **Tema Değişikliği:** Tüm sistem Lacivert (Navy Blue), Beyaz, Siyah renk paletine güncellendi
+- [x] Login sayfası: Mova Dijital markası + navy tema
+- [x] Sidebar: bg-slate-900 (lacivert) tema
+- [x] Tüm primary butonlar: bg-slate-900 hover:bg-black
+- [x] Tüm tablolar ve kartlar: slate-200/300 border renkleri
+- [x] Logo ikonu: "M" harfi
 
 ### Admin Panel
 - [x] Admin Dashboard
@@ -49,8 +59,9 @@ Agency OS, dijital pazarlama ajansları için dahili bir işletim sistemidir. M�
 ## Testing Status ✅
 - **Backend:** 100% (15/15 test geçti)
 - **Frontend:** 100%
-- **Test raporu:** /app/test_reports/iteration_5.json
+- **Test raporu:** /app/test_reports/iteration_6.json
 - **Retest gerekli:** Hayır
+- **Son test tarihi:** April 2026
 
 ## API Endpoints
 
