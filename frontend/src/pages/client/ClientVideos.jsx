@@ -67,7 +67,7 @@ export const ClientVideos = () => {
       case 'revision_requested':
         return <AlertCircle className="h-5 w-5 text-amber-600" />;
       default:
-        return <Clock className="h-5 w-5 text-blue-600" />;
+        return <Clock className="h-5 w-5 text-slate-600" />;
     }
   };
 

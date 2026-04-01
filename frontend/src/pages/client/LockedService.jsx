@@ -34,8 +34,8 @@ export const LockedService = ({ serviceName, description }) => {
               </ul>
             </Card>
 
-            <Card className="p-6 text-left border-indigo-600 border-2">
-              <div className="inline-block px-3 py-1 bg-indigo-600 text-white text-xs rounded-full mb-2">Popular</div>
+            <Card className="p-6 text-left border-slate-900 border-2">
+              <div className="inline-block px-3 py-1 bg-slate-900 text-white text-xs rounded-full mb-2">Popular</div>
               <h3 className="text-lg font-medium text-slate-900 mb-2">Professional</h3>
               <p className="text-3xl font-semibold text-slate-900 mb-4">$999<span className="text-sm text-slate-600">/mo</span></p>
               <ul className="space-y-2 text-sm text-slate-600">
@@ -66,9 +66,9 @@ export const LockedService = ({ serviceName, description }) => {
             </Card>
           </div>
 
-          <div className="bg-gradient-to-r from-indigo-50 to-pink-50 p-6 rounded-lg mb-6">
-            <h3 className="text-xl font-medium text-slate-900 mb-2">🎉 March Special Offer</h3>
-            <p className="text-slate-700">Get 50% off your first 3 months when you activate this service this month!</p>
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg mb-6">
+            <h3 className="text-xl font-medium text-slate-900 mb-2">🎉 Özel Teklif</h3>
+            <p className="text-slate-700">Bu hizmeti bu ay aktive ettiğinizde ilk 3 ay %50 indirim!</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

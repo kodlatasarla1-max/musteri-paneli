@@ -64,9 +64,9 @@ export const Login = () => {
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">A</span>
+                <span className="text-white font-bold text-xl">M</span>
               </div>
-              <span className="text-2xl font-bold text-slate-900">Ajans OS</span>
+              <span className="text-2xl font-bold text-slate-900">Mova Dijital</span>
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight" data-testid="login-title">{tr.auth.welcomeBack}</h1>
             <p className="mt-3 text-slate-600">{tr.auth.signInToAccount}</p>
@@ -125,7 +125,7 @@ export const Login = () => {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80" />
         <div className="relative z-10 p-12 max-w-lg text-center">
           <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-8 border border-white/20">
-            <span className="text-white font-bold text-4xl">A</span>
+            <span className="text-white font-bold text-4xl">M</span>
           </div>
           <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">{tr.auth.manageAgency}</h2>
           <p className="text-slate-300 text-lg leading-relaxed">{tr.auth.completeControl}</p>

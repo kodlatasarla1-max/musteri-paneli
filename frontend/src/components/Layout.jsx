@@ -174,7 +174,7 @@ export const Layout = ({ role, clientId }) => {
     <>
       <div className="p-4 lg:p-6 border-b border-white/10 flex items-center justify-between">
         <div>
-          <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight" data-testid="sidebar-title">Ajans OS</h1>
+          <h1 className="text-lg lg:text-xl font-bold text-white tracking-tight" data-testid="sidebar-title">Mova Dijital</h1>
           <p className="text-xs text-slate-400 mt-1" data-testid="user-role">{user?.full_name || role}</p>
         </div>
         {isMobile && (
@@ -249,7 +249,7 @@ export const Layout = ({ role, clientId }) => {
         >
           <Menu className="h-6 w-6" />
         </button>
-        <h1 className="text-white font-semibold text-lg">Ajans OS</h1>
+        <h1 className="text-white font-semibold text-lg">Mova Dijital</h1>
         <div className="w-10" aria-hidden="true" />
       </header>
 

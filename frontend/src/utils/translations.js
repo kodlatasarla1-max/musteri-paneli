@@ -2,7 +2,7 @@ export const tr = {
   // Auth
   auth: {
     welcomeBack: 'Tekrar hoş geldiniz',
-    signInToAccount: 'Ajans OS hesabınıza giriş yapın',
+    signInToAccount: 'Mova Dijital hesabınıza giriş yapın',
     emailAddress: 'E-posta adresi',
     password: 'Şifre',
     signIn: 'Giriş Yap',
@@ -11,7 +11,7 @@ export const tr = {
     loginFailed: 'Giriş başarısız',
     invalidCredentials: 'Geçersiz kimlik bilgileri',
     logout: 'Çıkış Yap',
-    manageAgency: 'Ajansınızı güvenle yönetin',
+    manageAgency: 'Markanızı güvenle yönetin',
     completeControl: 'Güçlü bir platformda müşteriler, projeler ve hizmetler üzerinde tam kontrol.',
   },
 
@@ -40,7 +40,7 @@ export const tr = {
 
   // Sidebar
   sidebar: {
-    agencyOS: 'Ajans OS',
+    agencyOS: 'Mova Dijital',
     dashboard: 'Gösterge Paneli',
     clients: 'Müşteriler',
     staff: 'Personel',

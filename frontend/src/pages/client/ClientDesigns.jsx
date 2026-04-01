@@ -63,7 +63,7 @@ export const ClientDesigns = () => {
       case 'revision_requested':
         return <AlertCircle className="h-5 w-5 text-amber-600" />;
       default:
-        return <Clock className="h-5 w-5 text-blue-600" />;
+        return <Clock className="h-5 w-5 text-slate-600" />;
     }
   };
 
@@ -83,12 +83,12 @@ export const ClientDesigns = () => {
         <h2 className="text-2xl font-medium text-slate-900 mb-4">{tr.client.designs.designGallery}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {designs.length === 0 ? (
-            <Card className="p-6 col-span-4 bg-blue-50 border-blue-100" data-testid="no-designs">
+            <Card className="p-6 col-span-4 bg-slate-50 border-slate-200" data-testid="no-designs">
               <p className="text-slate-600">{tr.client.designs.noDesigns}</p>
             </Card>
           ) : (
             designs.map((design) => (
-              <Card key={design.id} className="overflow-hidden border-blue-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`design-card-${design.id}`}>
+              <Card key={design.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-shadow" data-testid={`design-card-${design.id}`}>
                 <div className="aspect-square bg-slate-200 relative flex items-center justify-center">
                   <Image className="h-12 w-12 text-slate-400" />
                 </div>
@@ -108,7 +108,7 @@ export const ClientDesigns = () => {
                       <Button
                         size="sm"
                         onClick={() => setSelectedDesign({ ...design, action: 'approve' })}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        className="w-full bg-slate-900 hover:bg-black"
                         data-testid={`approve-design-${design.id}`}
                       >
                         {tr.client.designs.approveDesign}
@@ -117,7 +117,7 @@ export const ClientDesigns = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => setSelectedDesign({ ...design, action: 'revision' })}
-                        className="w-full border-blue-200"
+                        className="w-full border-slate-300"
                         data-testid={`request-revision-${design.id}`}
                       >
                         {tr.client.designs.requestDesignRevision}
@@ -148,7 +148,7 @@ export const ClientDesigns = () => {
               placeholder="Not ekleyin (isteğe bağlı)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="border-blue-200"
+              className="border-slate-300"
               data-testid="notes-textarea"
             />
           </div>
@@ -163,7 +163,7 @@ export const ClientDesigns = () => {
                   selectedDesign?.action === 'approve' ? 'approved' : 'revision_requested'
                 )
               }
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-slate-900 hover:bg-black"
               data-testid="confirm-status-button"
             >
               {tr.common.confirm}

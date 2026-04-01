@@ -64,7 +64,7 @@ export const AdminDashboard = () => {
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2" data-testid="admin-dashboard-title">
           {tr.admin.dashboard.title}
         </h1>
-        <p className="text-slate-600">Ajans performansınızı ve müşteri aktivitelerini yönetin</p>
+        <p className="text-slate-600">Mova Dijital performansınızı ve müşteri aktivitelerini yönetin</p>
       </div>
 
       {/* Stats Grid - Navy Theme */}
