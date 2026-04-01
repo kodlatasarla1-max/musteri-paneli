@@ -74,9 +74,16 @@ Mova Dijital, dijital pazarlama ajansları için dahili bir işletim sistemidir.
 ## Testing Status ✅
 - **Backend:** 100%
 - **Frontend:** 100%
-- **Test raporu:** /app/test_reports/iteration_7.json
+- **Test raporu:** /app/test_reports/iteration_8.json
 - **Retest gerekli:** Hayır
 - **Son test tarihi:** April 2026
+
+## Fixed Issues (April 2026 Session 2)
+- ✅ **SARI RENK TAMAMEN TEMİZLENDİ** - Tüm shadcn/ui bileşenlerinden (Dialog, Input, Select, Button, etc.)
+- ✅ **Demo giriş bilgileri kaldırıldı** - Login sayfasından
+- ✅ **Müşteri durumu dropdown** - Aktif/Beklemede/Süresi Dolmuş/Askıya Alındı
+- ✅ **Hesap Oluştur popup** - Email ve şifre belirleme özelliği
+- ✅ **Hesap hatası düzeltildi** - create-user-manual endpoint eklendi
 
 ## API Endpoints
 
