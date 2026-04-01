@@ -74,9 +74,26 @@ Mova Dijital, dijital pazarlama ajansları için dahili bir işletim sistemidir.
 ## Testing Status ✅
 - **Backend:** 100%
 - **Frontend:** 100%
-- **Test raporu:** /app/test_reports/iteration_8.json
+- **Test raporu:** /app/test_reports/iteration_9.json
 - **Retest gerekli:** Hayır
 - **Son test tarihi:** April 2026
+
+## Recent Updates (April 2026 - Session 3)
+
+### P0 - Mail Settings API Fix ✅
+- **Sorun:** E-posta ayarları Supabase'e kaydedilemiyordu (`system_settings` tablosu yoktu)
+- **Çözüm:** Dosya fallback mekanizması eklendi (`/app/backend/mail_settings.json`)
+- **SMTP Yapılandırması:** turkticaret.net (Port 465 SSL) başarıyla yapılandırıldı
+- **Test e-postası:** Başarıyla gönderildi
+
+### P1 - Aktivite Log Sistemi ✅
+- **AdminLogs.jsx güncellendi:** Backend alan isimleriyle uyumlu hale getirildi
+  - `log.timestamp` → `log.created_at`
+  - `log.user_email` → `log.actor_email`
+  - `log.resource_type` → `log.entity`
+- **Filtreleme özelliği:** Toplam, Oluşturma, Güncelleme, Silme kategorileri
+- **Yenile butonu:** Manuel log yenileme
+- **Türkçe etiketler:** Tüm eylem ve kaynak türleri Türkçe
 
 ## Fixed Issues (April 2026 Session 2)
 - ✅ **SARI RENK TAMAMEN TEMİZLENDİ** - Tüm shadcn/ui bileşenlerinden (Dialog, Input, Select, Button, etc.)
