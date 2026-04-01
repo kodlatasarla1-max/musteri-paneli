@@ -145,7 +145,9 @@ export const AdminMetaIntegration = () => {
     }
     
     try {
-      const response = await apiClient.get(`/meta/oauth/start/${selectedClientForOAuth}`);
+      // Pass frontend origin for proper OAuth redirect
+      const frontendOrigin = encodeURIComponent(window.location.origin);
+      const response = await apiClient.get(`/meta/oauth/start/${selectedClientForOAuth}?frontend_origin=${frontendOrigin}`);
       // Redirect to Meta authorization URL
       window.location.href = response.data.authorization_url;
     } catch (error) {

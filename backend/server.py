@@ -2574,7 +2574,7 @@ async def get_whatsapp_status(user: dict = Depends(require_admin)):
 # META OAUTH INTEGRATION
 # =====================================================
 @api_router.get("/meta/oauth/start/{client_id}")
-async def start_meta_oauth(client_id: str, user: dict = Depends(require_admin)):
+async def start_meta_oauth(client_id: str, frontend_origin: str = None, user: dict = Depends(require_admin)):
     """Start Meta OAuth flow for a client"""
     if not META_APP_ID:
         raise HTTPException(status_code=500, detail="Meta App ID yapılandırılmamış")
@@ -2584,7 +2584,8 @@ async def start_meta_oauth(client_id: str, user: dict = Depends(require_admin)):
     oauth_state_storage[state] = {
         "client_id": client_id,
         "user_id": user['id'],
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(timezone.utc),
+        "frontend_origin": frontend_origin or FRONTEND_URL or ""
     }
     
     # Build authorization URL
@@ -2612,7 +2613,12 @@ async def meta_oauth_callback(
     error_description: str = None
 ):
     """Handle Meta OAuth callback"""
-    redirect_base = FRONTEND_URL if FRONTEND_URL else ""
+    # Get redirect base from state or fallback to env
+    redirect_base = ""
+    if state and state in oauth_state_storage:
+        redirect_base = oauth_state_storage[state].get("frontend_origin", "") or FRONTEND_URL or ""
+    else:
+        redirect_base = FRONTEND_URL or ""
     
     if error:
         logging.error(f"Meta OAuth error: {error} - {error_description}")
