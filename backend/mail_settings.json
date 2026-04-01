@@ -1,0 +1,10 @@
+{
+  "provider": "smtp",
+  "smtp_host": "smtp.turkticaret.net",
+  "smtp_port": 465,
+  "smtp_username": "info@movadijital.com",
+  "smtp_password": "test_password_123",
+  "smtp_use_tls": true,
+  "smtp_from_email": "info@movadijital.com",
+  "smtp_from_name": "Mova Dijital"
+}

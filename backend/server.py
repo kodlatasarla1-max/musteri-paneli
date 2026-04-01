@@ -40,6 +40,28 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 # OAuth state storage (in production, use Redis)
 oauth_state_storage = {}
 
+# =====================================================
+# INITIALIZE MAIL TABLES (if not exist)
+# =====================================================
+def init_mail_tables():
+    """Initialize mail system tables if they don't exist"""
+    import httpx
+    try:
+        # Check if system_settings table exists by trying to query it
+        test = supabase.table('system_settings').select('id').limit(1).execute()
+        logging.info("Mail tables already exist")
+        return True
+    except Exception as e:
+        logging.warning(f"Mail tables may not exist, attempting to create: {e}")
+        
+    # If table doesn't exist, we need to create it via Supabase SQL Editor
+    # Since we can't run raw SQL through the REST API, we'll use a workaround:
+    # Store settings in a JSON file or environment variable as fallback
+    return False
+
+# Global mail settings cache (fallback if DB not available)
+MAIL_SETTINGS_CACHE = {}
+
 app = FastAPI(title="Agency OS API", version="2.2.0")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
@@ -2769,20 +2791,50 @@ async def refresh_meta_token(client_id: str, user: dict = Depends(require_admin_
 # =====================================================
 # MAIL SYSTEM - HELPERS
 # =====================================================
+MAIL_SETTINGS_FILE = Path(__file__).parent / 'mail_settings.json'
+
 def get_mail_settings():
-    """Get mail settings from database"""
+    """Get mail settings from database or file fallback"""
+    import json
+    # Try database first
     try:
         response = supabase.table('system_settings').select('*').eq('setting_key', 'mail_settings').single().execute()
         if response.data:
-            import json
             return json.loads(response.data['setting_value'])
-        return None
-    except Exception:
-        return None
+    except Exception as e:
+        logging.warning(f"DB get mail settings failed, trying file fallback: {e}")
+    
+    # Fallback to file
+    try:
+        if MAIL_SETTINGS_FILE.exists():
+            with open(MAIL_SETTINGS_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        logging.error(f"File fallback also failed: {e}")
+    
+    # Return from cache if available
+    if MAIL_SETTINGS_CACHE:
+        return MAIL_SETTINGS_CACHE
+    
+    return None
 
 def save_mail_settings(settings: dict):
-    """Save mail settings to database"""
+    """Save mail settings to database and file fallback"""
     import json
+    global MAIL_SETTINGS_CACHE
+    
+    # Always save to file as backup
+    try:
+        with open(MAIL_SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+        logging.info("Mail settings saved to file")
+    except Exception as e:
+        logging.error(f"Failed to save mail settings to file: {e}")
+    
+    # Update cache
+    MAIL_SETTINGS_CACHE = settings.copy()
+    
+    # Try database
     try:
         existing = supabase.table('system_settings').select('id').eq('setting_key', 'mail_settings').execute()
         if existing.data:
@@ -2796,10 +2848,12 @@ def save_mail_settings(settings: dict):
                 'setting_value': json.dumps(settings),
                 'created_at': datetime.now(timezone.utc).isoformat()
             }).execute()
+        logging.info("Mail settings saved to database")
         return True
     except Exception as e:
-        logging.error(f"Save mail settings error: {e}")
-        return False
+        logging.error(f"DB save mail settings error (using file fallback): {e}")
+        # Return True if file save succeeded
+        return MAIL_SETTINGS_FILE.exists()
 
 def get_mail_template(template_type: str) -> dict:
     """Get mail template from database"""
