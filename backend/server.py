@@ -532,6 +532,11 @@ def create_or_extend_access(client_id: str, receipt_id: str, activated_by: str, 
 async def root():
     return {"message": "Agency OS API v2.1", "status": "running", "database": "Supabase"}
 
+@api_router.get("/health")
+async def api_health_check():
+    """Health check endpoint for Kubernetes liveness/readiness probes"""
+    return {"status": "healthy", "service": "mova-dijital-backend", "version": "2.2.0"}
+
 
 # =====================================================
 # AUTH ENDPOINTS
@@ -3422,6 +3427,17 @@ async def send_client_credentials(client_id: str, user: dict = Depends(require_a
 # APP SETUP
 # =====================================================
 app.include_router(api_router)
+
+# Health check endpoint for Kubernetes (must be at root level, not under /api)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Kubernetes liveness/readiness probes"""
+    return {"status": "healthy", "service": "agency-os-backend"}
+
+@app.get("/")
+async def root_redirect():
+    """Root endpoint redirects to API"""
+    return {"message": "Mova Dijital API", "docs": "/docs", "health": "/health"}
 
 app.add_middleware(
     CORSMiddleware,
