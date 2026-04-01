@@ -38,16 +38,32 @@ META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI')
 # Frontend URL for OAuth redirects
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
 
-# Initialize Supabase client safely
+# Lazy initialize Supabase client
+_supabase_client: Client = None
+
+def get_supabase() -> Client:
+    """Get or create Supabase client (lazy initialization)"""
+    global _supabase_client
+    if _supabase_client is None:
+        if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+            try:
+                _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+                logging.info("Supabase client initialized successfully")
+            except Exception as e:
+                logging.error(f"Failed to initialize Supabase client: {e}")
+                raise
+        else:
+            logging.warning("Supabase credentials not found")
+            raise Exception("Supabase not configured")
+    return _supabase_client
+
+# For backward compatibility - will be lazily initialized on first use
 supabase: Client = None
-if SUPABASE_URL and SUPABASE_SERVICE_KEY:
-    try:
+try:
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
         supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        logging.info("Supabase client initialized successfully")
-    except Exception as e:
-        logging.error(f"Failed to initialize Supabase client: {e}")
-else:
-    logging.warning("Supabase credentials not found, some features may not work")
+except Exception as e:
+    logging.warning(f"Supabase initialization deferred: {e}")
 
 # OAuth state storage (in production, use Redis)
 oauth_state_storage = {}
@@ -544,12 +560,7 @@ async def root():
 @api_router.get("/health")
 async def api_health_check():
     """Health check endpoint for Kubernetes liveness/readiness probes"""
-    return {
-        "status": "healthy", 
-        "service": "mova-dijital-backend", 
-        "version": "2.2.0",
-        "database": "connected" if supabase else "not_configured"
-    }
+    return {"status": "healthy", "service": "mova-dijital-backend"}
 
 
 # =====================================================
@@ -3447,13 +3458,13 @@ app.include_router(api_router)
 # Health check endpoint for Kubernetes (must be at root level, not under /api)
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for Kubernetes liveness/readiness probes"""
-    return {"status": "healthy", "service": "agency-os-backend"}
+    """Health check endpoint for Kubernetes liveness/readiness probes - FAST RESPONSE"""
+    return {"status": "healthy"}
 
 @app.get("/")
 async def root_redirect():
-    """Root endpoint redirects to API"""
-    return {"message": "Mova Dijital API", "docs": "/docs", "health": "/health"}
+    """Root endpoint"""
+    return {"status": "ok", "service": "mova-dijital"}
 
 app.add_middleware(
     CORSMiddleware,
