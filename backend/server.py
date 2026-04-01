@@ -38,7 +38,16 @@ META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI')
 # Frontend URL for OAuth redirects
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+# Initialize Supabase client safely
+supabase: Client = None
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        logging.info("Supabase client initialized successfully")
+    except Exception as e:
+        logging.error(f"Failed to initialize Supabase client: {e}")
+else:
+    logging.warning("Supabase credentials not found, some features may not work")
 
 # OAuth state storage (in production, use Redis)
 oauth_state_storage = {}
@@ -388,7 +397,7 @@ def notify_client_users(client_id: str, type: str, title: str, message: str, lin
             template_type = None
             template_vars = {
                 'client_name': client_data.get('contact_name', ''),
-                'portal_url': os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+                'portal_url': FRONTEND_URL
             }
             
             if type == 'video_uploaded' or type == 'design_uploaded':
@@ -535,7 +544,12 @@ async def root():
 @api_router.get("/health")
 async def api_health_check():
     """Health check endpoint for Kubernetes liveness/readiness probes"""
-    return {"status": "healthy", "service": "mova-dijital-backend", "version": "2.2.0"}
+    return {
+        "status": "healthy", 
+        "service": "mova-dijital-backend", 
+        "version": "2.2.0",
+        "database": "connected" if supabase else "not_configured"
+    }
 
 
 # =====================================================
@@ -543,6 +557,8 @@ async def api_health_check():
 # =====================================================
 @api_router.post("/auth/login")
 async def login(request: LoginRequest):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Veritabanı bağlantısı yapılandırılmamış")
     try:
         response = supabase.auth.sign_in_with_password({
             "email": request.email,
@@ -3397,7 +3413,7 @@ async def send_client_credentials(client_id: str, user: dict = Depends(require_a
         
         # Send email with new credentials
         template = get_mail_template('welcome')
-        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        login_url = FRONTEND_URL
         
         email_body = render_template(template.get('body_html', ''), {
             'client_name': client_data['contact_name'],
