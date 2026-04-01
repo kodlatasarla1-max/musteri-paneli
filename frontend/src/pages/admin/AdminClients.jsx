@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Key, Mail, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Key, Mail, User, UserPlus } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -30,8 +31,11 @@ export const AdminClients = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [selectedClientForPassword, setSelectedClientForPassword] = useState(null);
+  const [selectedClientForUser, setSelectedClientForUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [newUserData, setNewUserData] = useState({ email: '', password: '' });
   const [creatingUser, setCreatingUser] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [formData, setFormData] = useState({
@@ -118,14 +122,35 @@ export const AdminClients = () => {
   };
 
   // Password management functions
-  const handleCreateUser = async (clientId) => {
+  const handleOpenCreateUserDialog = (client) => {
+    setSelectedClientForUser(client);
+    setNewUserData({ 
+      email: client.contact_email, 
+      password: '' 
+    });
+    setShowCreateUserDialog(true);
+  };
+
+  const handleCreateUserWithCredentials = async () => {
+    if (!newUserData.email || !newUserData.password) {
+      toast.error('E-posta ve şifre gereklidir');
+      return;
+    }
+    if (newUserData.password.length < 6) {
+      toast.error('Şifre en az 6 karakter olmalıdır');
+      return;
+    }
     setCreatingUser(true);
     try {
-      const response = await apiClient.post(`/clients/${clientId}/create-user`);
-      toast.success(`Kullanıcı oluşturuldu! Şifre: ${response.data.password}`);
+      const response = await apiClient.post(`/clients/${selectedClientForUser.id}/create-user-manual`, {
+        email: newUserData.email,
+        password: newUserData.password
+      });
+      toast.success('Kullanıcı hesabı oluşturuldu!');
       if (response.data.email_sent) {
         toast.success('Giriş bilgileri e-posta ile gönderildi');
       }
+      setShowCreateUserDialog(false);
       loadClients();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Kullanıcı oluşturulamadı');
@@ -166,6 +191,16 @@ export const AdminClients = () => {
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'İşlem başarısız');
+    }
+  };
+
+  const handleStatusChange = async (clientId, newStatus) => {
+    try {
+      await apiClient.put(`/clients/${clientId}`, { status: newStatus });
+      toast.success('Müşteri durumu güncellendi');
+      loadClients();
+    } catch (error) {
+      toast.error('Durum güncellenemedi');
     }
   };
 
@@ -283,13 +318,20 @@ export const AdminClients = () => {
                   </TableCell>
                   <TableCell>{client.industry}</TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      client.status === 'active' ? 'bg-green-100 text-green-800' :
-                      client.status === 'expired' ? 'bg-red-100 text-red-800' :
-                      'bg-slate-100 text-slate-800'
-                    }`}>
-                      {tr.status[client.status] || client.status}
-                    </span>
+                    <Select 
+                      value={client.status} 
+                      onValueChange={(val) => handleStatusChange(client.id, val)}
+                    >
+                      <SelectTrigger className="w-28 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Aktif</SelectItem>
+                        <SelectItem value="pending">Beklemede</SelectItem>
+                        <SelectItem value="expired">Süresi Dolmuş</SelectItem>
+                        <SelectItem value="suspended">Askıya Alındı</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     {client.user_id ? (
@@ -321,12 +363,12 @@ export const AdminClients = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleCreateUser(client.id)}
+                        onClick={() => handleOpenCreateUserDialog(client)}
                         disabled={creatingUser}
                         className="border-slate-300 text-slate-700 text-xs"
                         data-testid={`create-user-${client.id}`}
                       >
-                        <Key className="h-3 w-3 mr-1" />
+                        <UserPlus className="h-3 w-3 mr-1" />
                         Hesap Oluştur
                       </Button>
                     )}
@@ -481,6 +523,75 @@ export const AdminClients = () => {
             </Button>
             <Button onClick={handleUpdatePassword} className="bg-slate-900 hover:bg-black">
               Şifreyi Güncelle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Müşteri Hesabı Oluştur
+            </DialogTitle>
+            <DialogDescription>
+              {selectedClientForUser?.company_name} için giriş bilgilerini belirleyin
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>E-posta Adresi</Label>
+              <Input
+                type="email"
+                value={newUserData.email}
+                onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                placeholder="ornek@sirket.com"
+                className="border-slate-300"
+                data-testid="new-user-email-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Şifre</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  placeholder="En az 6 karakter"
+                  className="border-slate-300"
+                  data-testid="new-user-password-input"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+                    let pass = '';
+                    for (let i = 0; i < 12; i++) {
+                      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    setNewUserData({ ...newUserData, password: pass });
+                  }}
+                  className="border-slate-300"
+                >
+                  Oluştur
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500">Bu bilgiler müşteriye e-posta ile gönderilecektir</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateUserDialog(false)}>
+              İptal
+            </Button>
+            <Button 
+              onClick={handleCreateUserWithCredentials} 
+              className="bg-slate-900 hover:bg-black"
+              disabled={creatingUser}
+            >
+              {creatingUser ? 'Oluşturuluyor...' : 'Hesabı Oluştur'}
             </Button>
           </DialogFooter>
         </DialogContent>

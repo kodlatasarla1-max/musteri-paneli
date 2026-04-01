@@ -216,6 +216,10 @@ class MailTemplateUpdate(BaseModel):
 class ClientPasswordUpdate(BaseModel):
     new_password: str
 
+class ClientUserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
 class SendTestEmail(BaseModel):
     to_email: EmailStr
 
@@ -3106,14 +3110,18 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
         password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
         
         # Create user in Supabase Auth
-        auth_response = supabase.auth.admin.create_user({
-            "email": email,
-            "password": password,
-            "email_confirm": True
-        })
+        try:
+            auth_response = supabase.auth.admin.create_user({
+                "email": email,
+                "password": password,
+                "email_confirm": True
+            })
+        except Exception as auth_error:
+            logging.error(f"Supabase Auth create_user error: {auth_error}")
+            raise HTTPException(status_code=500, detail=f"Kullanıcı oluşturulamadı: {str(auth_error)}")
         
         if not auth_response.user:
-            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı")
+            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı - auth response boş")
         
         user_id = auth_response.user.id
         
@@ -3167,6 +3175,95 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
         raise
     except Exception as e:
         logging.error(f"Create client user error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/clients/{client_id}/create-user-manual")
+async def create_client_user_manual(client_id: str, data: ClientUserCreate, user: dict = Depends(require_admin)):
+    """Create a user account for a client with manual email and password"""
+    try:
+        # Get client info
+        client = supabase.table('clients').select('*').eq('id', client_id).single().execute()
+        if not client.data:
+            raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
+        
+        client_data = client.data
+        email = data.email
+        password = data.password
+        
+        # Check if user already exists
+        existing_profile = supabase.table('profiles').select('id').eq('email', email).execute()
+        if existing_profile.data:
+            raise HTTPException(status_code=400, detail="Bu e-posta ile zaten bir kullanıcı var")
+        
+        # Create user in Supabase Auth
+        try:
+            auth_response = supabase.auth.admin.create_user({
+                "email": email,
+                "password": password,
+                "email_confirm": True
+            })
+        except Exception as auth_error:
+            logging.error(f"Supabase Auth create_user error: {auth_error}")
+            raise HTTPException(status_code=500, detail=f"Kullanıcı oluşturulamadı: {str(auth_error)}")
+        
+        if not auth_response.user:
+            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı - auth response boş")
+        
+        user_id = auth_response.user.id
+        
+        # Create profile
+        supabase.table('profiles').insert({
+            'id': user_id,
+            'email': email,
+            'full_name': client_data['contact_name'],
+            'role': 'client',
+            'client_id': client_id,
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        # Update client with user_id reference and update contact_email if different
+        update_data = {
+            'user_id': user_id,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        if email != client_data['contact_email']:
+            update_data['contact_email'] = email
+        
+        supabase.table('clients').update(update_data).eq('id', client_id).execute()
+        
+        # Send welcome email
+        template = get_mail_template('welcome')
+        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        
+        email_body = render_template(template.get('body_html', ''), {
+            'client_name': client_data['contact_name'],
+            'email': email,
+            'password': password,
+            'login_url': login_url
+        })
+        
+        email_sent = await send_email(email, template.get('subject', 'Hoş Geldiniz'), email_body)
+        
+        # Create audit log
+        supabase.table('audit_logs').insert({
+            'actor_user_id': user['id'],
+            'action': 'create_client_user_manual',
+            'resource_type': 'client',
+            'resource_id': client_id,
+            'details': {'email': email, 'email_sent': email_sent},
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        return {
+            "message": "Kullanıcı hesabı oluşturuldu",
+            "user_id": user_id,
+            "email": email,
+            "email_sent": email_sent
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create client user manual error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.put("/clients/{client_id}/password")
