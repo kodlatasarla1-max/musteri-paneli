@@ -33,7 +33,10 @@ TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+1415523
 # Meta OAuth Config
 META_APP_ID = os.environ.get('META_APP_ID')
 META_APP_SECRET = os.environ.get('META_APP_SECRET')
-META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI', 'http://localhost:8001/api/meta/callback')
+META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI')
+
+# Frontend URL for OAuth redirects
+FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
@@ -2609,9 +2612,11 @@ async def meta_oauth_callback(
     error_description: str = None
 ):
     """Handle Meta OAuth callback"""
+    redirect_base = FRONTEND_URL if FRONTEND_URL else ""
+    
     if error:
         logging.error(f"Meta OAuth error: {error} - {error_description}")
-        return RedirectResponse(url=f"/admin/meta-integration?error={error}")
+        return RedirectResponse(url=f"{redirect_base}/admin/meta-integration?error={error}")
     
     if not code or not state:
         raise HTTPException(status_code=400, detail="Eksik parametreler")
@@ -2714,13 +2719,13 @@ async def meta_oauth_callback(
         del oauth_state_storage[state]
         
         # Redirect to admin panel with success
-        return RedirectResponse(url=f"/admin/meta-integration?success=true&accounts={len(ad_accounts)}")
+        return RedirectResponse(url=f"{redirect_base}/admin/meta-integration?success=true&accounts={len(ad_accounts)}")
         
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"Meta OAuth callback error: {e}")
-        return RedirectResponse(url=f"/admin/meta-integration?error=callback_failed")
+        return RedirectResponse(url=f"{redirect_base}/admin/meta-integration?error=callback_failed")
 
 
 @api_router.get("/meta/oauth/status")
