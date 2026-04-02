@@ -1,0 +1,30 @@
+services:
+  # Frontend Service
+  - type: web
+    name: musteri-paneli-frontend
+    runtime: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npx serve -s build -l 3000
+    envVars:
+      - key: REACT_APP_SUPABASE_URL
+        value: https://uockujaxzcgofeoovkgj.supabase.co
+      - key: REACT_APP_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY2t1amF4emNnb2Zlb292a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NzU3NjYsImV4cCI6MjA5MDU1MTc2Nn0.2xAxN1I048Dm-4QqREKLxyxLHpCu-1g7E_pgC1NIYbc
+      - key: REACT_APP_API_URL
+        value: https://musteri-paneli-backend.onrender.com
+
+  # Backend Service
+  - type: web
+    name: musteri-paneli-backend
+    runtime: python
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        value: https://uockujaxzcgofeoovkgj.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY2t1amF4emNnb2Zlb292a2dqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDk3NTc2NiwiZXhwIjoyMDkwNTUxNzY2fQ.f89l3mQqHeN93f9-O3usFqkejPYNmn2utdfV62Sc9u8
+      - key: JWT_SECRET
+        generateValue: true
