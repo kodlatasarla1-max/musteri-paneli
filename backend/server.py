@@ -17,8 +17,19 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from supabase import create_client, Client
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# FastAPI app
+app = FastAPI(title="Mova Dijital API", version="2.2.0")
+api_router = APIRouter(prefix="/api")
 
 # Supabase client setup
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -38,32 +49,14 @@ META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI')
 # Frontend URL for OAuth redirects
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
 
-# Lazy initialize Supabase client
-_supabase_client: Client = None
-
-def get_supabase() -> Client:
-    """Get or create Supabase client (lazy initialization)"""
-    global _supabase_client
-    if _supabase_client is None:
-        if SUPABASE_URL and SUPABASE_SERVICE_KEY:
-            try:
-                _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-                logging.info("Supabase client initialized successfully")
-            except Exception as e:
-                logging.error(f"Failed to initialize Supabase client: {e}")
-                raise
-        else:
-            logging.warning("Supabase credentials not found")
-            raise Exception("Supabase not configured")
-    return _supabase_client
-
-# For backward compatibility - will be lazily initialized on first use
+# Initialize Supabase client safely
 supabase: Client = None
-try:
-    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    try:
         supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-except Exception as e:
-    logging.warning(f"Supabase initialization deferred: {e}")
+        logger.info("Supabase client initialized successfully")
+    except Exception as e:
+        logger.error(f"Supabase initialization failed: {e}")
 
 # OAuth state storage (in production, use Redis)
 oauth_state_storage = {}
@@ -551,21 +544,17 @@ def create_or_extend_access(client_id: str, receipt_id: str, activated_by: str, 
 
 
 # =====================================================
-# ROOT
-# =====================================================
-@api_router.get("/")
-async def root():
-    return {"message": "Agency OS API v2.1", "status": "running", "database": "Supabase"}
-
-@api_router.get("/health")
-async def api_health_check():
-    """Health check endpoint for Kubernetes liveness/readiness probes"""
-    return {"status": "healthy", "service": "mova-dijital-backend"}
-
-
-# =====================================================
 # AUTH ENDPOINTS
 # =====================================================
+@api_router.get("/health")
+async def api_health_check():
+    """API Health check endpoint"""
+    return {"status": "healthy"}
+
+@api_router.get("/")
+async def api_root():
+    """API Root endpoint"""
+    return {"message": "Mova Dijital API v2.2", "status": "running"}
 @api_router.post("/auth/login")
 async def login(request: LoginRequest):
     if not supabase:
@@ -3451,18 +3440,18 @@ async def send_client_credentials(client_id: str, user: dict = Depends(require_a
 
 
 # =====================================================
-# APP SETUP
+# APP SETUP - Include router and middleware
 # =====================================================
 app.include_router(api_router)
 
-# Health check endpoint for Kubernetes (must be at root level, not under /api)
+# Health check endpoints for Kubernetes (at root level)
 @app.get("/health")
-async def health_check():
-    """Health check endpoint for Kubernetes liveness/readiness probes - FAST RESPONSE"""
+async def root_health():
+    """Root health check for Kubernetes"""
     return {"status": "healthy"}
 
 @app.get("/")
-async def root_redirect():
+async def root_endpoint():
     """Root endpoint"""
     return {"status": "ok", "service": "mova-dijital"}
 
@@ -3473,9 +3462,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
