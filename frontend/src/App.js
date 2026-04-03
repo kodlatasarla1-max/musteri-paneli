@@ -20,7 +20,7 @@ import { AdminStaff } from "./pages/admin/AdminStaff";
 import { AdminContent } from "./pages/admin/AdminContent";
 import { AdminCalendar } from "./pages/admin/AdminCalendar";
 import { AdminAdsReports } from "./pages/admin/AdminAdsReports";
-import { AdminMetaIntegration } from "./pages/admin/AdminMetaIntegration";
+import { AdminAccounting } from "./pages/admin/AdminAccounting";
 import { AdminReceipts } from "./pages/admin/AdminReceipts";
 import { AdminRevisions } from "./pages/admin/AdminRevisions";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
@@ -102,7 +102,7 @@ function App() {
             <Route path="content" element={<AdminContent />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="ads-reports" element={<AdminAdsReports />} />
-            <Route path="meta-integration" element={<AdminMetaIntegration />} />
+            <Route path="accounting" element={<AdminAccounting />} />
             <Route path="receipts" element={<AdminReceipts />} />
             <Route path="revisions" element={<AdminRevisions />} />
             <Route path="campaigns" element={<AdminCampaigns />} />

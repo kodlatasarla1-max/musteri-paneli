@@ -1412,6 +1412,140 @@ async def export_client_finance(client_id: str, year: Optional[int] = None, mont
 
 
 # =====================================================
+# ADMIN FINANCE / ACCOUNTING
+# =====================================================
+
+@api_router.get("/admin/finance/overview")
+async def get_admin_finance_overview(year: Optional[int] = None, month: Optional[int] = None, user: dict = Depends(get_current_user)):
+    """Admin: Get aggregated financial overview across all clients + agency"""
+    if user.get('role') not in ['admin']:
+        raise HTTPException(status_code=403, detail="Yetki yok")
+    try:
+        # Get all client transactions
+        query = supabase.table('client_finance_transactions').select('*, clients(company_name, contact_name)')
+        if year:
+            query = query.gte('transaction_date', f'{year}-01-01').lte('transaction_date', f'{year}-12-31')
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            query = query.gte('transaction_date', f'{year}-{month:02d}-01').lte('transaction_date', f'{year}-{month:02d}-{last_day:02d}')
+        all_transactions = query.order('transaction_date', desc=True).execute()
+
+        transactions = all_transactions.data or []
+        total_income = sum(float(t['amount']) for t in transactions if t['transaction_type'] == 'income')
+        total_expense = sum(float(t['amount']) for t in transactions if t['transaction_type'] == 'expense')
+        net = total_income - total_expense
+
+        # Per-client summary
+        client_summary = {}
+        for t in transactions:
+            cid = t['client_id']
+            if cid not in client_summary:
+                client_info = t.get('clients') or {}
+                client_summary[cid] = {
+                    'client_id': cid,
+                    'company_name': client_info.get('company_name', 'Bilinmeyen'),
+                    'contact_name': client_info.get('contact_name', ''),
+                    'income': 0.0,
+                    'expense': 0.0,
+                    'net': 0.0,
+                    'transaction_count': 0
+                }
+            amount = float(t['amount'])
+            if t['transaction_type'] == 'income':
+                client_summary[cid]['income'] += amount
+            else:
+                client_summary[cid]['expense'] += amount
+            client_summary[cid]['transaction_count'] += 1
+            client_summary[cid]['net'] = client_summary[cid]['income'] - client_summary[cid]['expense']
+
+        # Monthly trend (last 12 months)
+        from collections import defaultdict
+        monthly = defaultdict(lambda: {'income': 0.0, 'expense': 0.0})
+        for t in transactions:
+            month_key = t['transaction_date'][:7]
+            amount = float(t['amount'])
+            if t['transaction_type'] == 'income':
+                monthly[month_key]['income'] += amount
+            else:
+                monthly[month_key]['expense'] += amount
+        monthly_list = sorted([{'month': k, **v} for k, v in monthly.items()], key=lambda x: x['month'])
+
+        # Category breakdown
+        cat_breakdown = defaultdict(lambda: {'income': 0.0, 'expense': 0.0})
+        for t in transactions:
+            cat = t.get('category', 'other')
+            amount = float(t['amount'])
+            if t['transaction_type'] == 'income':
+                cat_breakdown[cat]['income'] += amount
+            else:
+                cat_breakdown[cat]['expense'] += amount
+
+        return {
+            'summary': {
+                'total_income': round(total_income, 2),
+                'total_expense': round(total_expense, 2),
+                'net_profit': round(net, 2),
+                'transaction_count': len(transactions),
+                'client_count': len(client_summary)
+            },
+            'client_summary': sorted(client_summary.values(), key=lambda x: x['net'], reverse=True),
+            'monthly_trend': monthly_list,
+            'category_breakdown': [{'category': k, **v} for k, v in cat_breakdown.items()]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Admin finance overview error: {e}")
+        raise HTTPException(status_code=500, detail="Muhasebe özeti yüklenemedi")
+
+
+@api_router.get("/admin/finance/transactions")
+async def get_admin_finance_transactions(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    client_id: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Admin: Get all transactions with client info"""
+    if user.get('role') not in ['admin']:
+        raise HTTPException(status_code=403, detail="Yetki yok")
+    try:
+        query = supabase.table('client_finance_transactions').select('*, clients(company_name, contact_name)')
+        if year:
+            query = query.gte('transaction_date', f'{year}-01-01').lte('transaction_date', f'{year}-12-31')
+        if month and year:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            query = query.gte('transaction_date', f'{year}-{month:02d}-01').lte('transaction_date', f'{year}-{month:02d}-{last_day:02d}')
+        if client_id:
+            query = query.eq('client_id', client_id)
+        if transaction_type:
+            query = query.eq('transaction_type', transaction_type)
+        response = query.order('transaction_date', desc=True).execute()
+        return response.data or []
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Admin finance transactions error: {e}")
+        raise HTTPException(status_code=500, detail="İşlemler yüklenemedi")
+
+
+@api_router.get("/admin/finance/clients-list")
+async def get_admin_finance_clients(user: dict = Depends(get_current_user)):
+    """Admin: Get clients list for finance filter"""
+    if user.get('role') not in ['admin']:
+        raise HTTPException(status_code=403, detail="Yetki yok")
+    try:
+        response = supabase.table('clients').select('id, company_name, contact_name').eq('client_status', 'active').order('company_name').execute()
+        return response.data or []
+    except Exception as e:
+        logging.error(f"Admin finance clients error: {e}")
+        raise HTTPException(status_code=500, detail="Müşteriler yüklenemedi")
+
+
+# =====================================================
 # VIDEOS
 # =====================================================
 @api_router.get("/videos/{client_id}")

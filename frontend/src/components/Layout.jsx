@@ -122,7 +122,7 @@ export const Layout = ({ role, clientId }) => {
     { icon: Video, label: tr.sidebar.content, path: '/admin/content' },
     { icon: Calendar, label: tr.sidebar.calendar, path: '/admin/calendar' },
     { icon: BarChart3, label: tr.sidebar.adsReports, path: '/admin/ads-reports' },
-    { icon: Globe, label: 'Meta Entegrasyonu', path: '/admin/meta-integration' },
+    { icon: Wallet, label: 'Muhasebe', path: '/admin/accounting' },
     { icon: Receipt, label: tr.sidebar.receipts, path: '/admin/receipts', badge: pendingReceiptsCount },
     { icon: MessageSquare, label: 'Revizyonlar', path: '/admin/revisions' },
     { icon: Megaphone, label: tr.sidebar.campaigns, path: '/admin/campaigns' },
