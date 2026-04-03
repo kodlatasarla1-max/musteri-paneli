@@ -882,6 +882,59 @@ async def get_client_access(client_id: str, user: dict = Depends(get_current_use
         raise HTTPException(status_code=500, detail="Erişim bilgisi yüklenemedi")
 
 
+@api_router.post("/clients/{client_id}/set-access")
+async def set_client_access(client_id: str, data: dict, user: dict = Depends(require_admin)):
+    """Admin tarafından müşteriye erişim süresi ayarlama (bugünden itibaren)"""
+    try:
+        days = int(data.get('days', 0))
+        if days < 0:
+            raise HTTPException(status_code=400, detail="Gün sayısı 0 veya daha büyük olmalı")
+
+        now = datetime.now(timezone.utc)
+
+        # Mevcut aktif erişimi iptal et
+        supabase.table('client_access').update({'status': 'cancelled'}).eq('client_id', client_id).eq('status', 'active').execute()
+
+        if days == 0:
+            # Erişimi kapat
+            supabase.table('clients').update({
+                'access_days_remaining': 0,
+                'access_expires_at': now.isoformat(),
+                'current_access_id': None
+            }).eq('id', client_id).execute()
+            log_audit(user['id'], user.get('email', ''), 'set_access', 'client', client_id, client_id, None, {'days': 0})
+            return {'message': 'Erişim kapatıldı', 'days_remaining': 0}
+
+        new_until = now + timedelta(days=days)
+        result = supabase.table('client_access').insert({
+            'client_id': client_id,
+            'receipt_id': None,
+            'active_from': now.isoformat(),
+            'active_until': new_until.isoformat(),
+            'status': 'active',
+            'activated_by': user['id'],
+            'notes': f'Admin tarafından {days} gün olarak ayarlandı ({now.strftime("%Y-%m-%d")})'
+        }).execute()
+
+        access_id = result.data[0]['id']
+        days_remaining = (new_until - now).days
+
+        supabase.table('clients').update({
+            'status': 'active',
+            'current_access_id': access_id,
+            'access_days_remaining': days_remaining,
+            'access_expires_at': new_until.isoformat(),
+        }).eq('id', client_id).execute()
+
+        log_audit(user['id'], user.get('email', ''), 'set_access', 'client', client_id, client_id, None, {'days': days, 'active_until': new_until.isoformat()})
+        return {'message': f'{days} gün erişim ayarlandı', 'days_remaining': days_remaining, 'active_until': new_until.isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Set client access error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/client-access/{client_id}/history")
 async def get_client_access_history(client_id: str, user: dict = Depends(get_current_user)):
     try:

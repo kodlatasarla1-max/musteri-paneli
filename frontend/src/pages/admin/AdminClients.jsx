@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Key, Mail, User, UserPlus, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Key, Mail, User, UserPlus, Settings, Clock } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
@@ -45,6 +45,10 @@ export const AdminClients = () => {
   const [editingClient, setEditingClient] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [savingServices, setSavingServices] = useState(false);
+  const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [selectedClientForAccess, setSelectedClientForAccess] = useState(null);
+  const [accessDays, setAccessDays] = useState('');
+  const [settingAccess, setSettingAccess] = useState(false);
   const [formData, setFormData] = useState({
     company_name: '',
     contact_name: '',
@@ -282,6 +286,31 @@ export const AdminClients = () => {
     }
   };
 
+  const openAccessDialog = (client) => {
+    setSelectedClientForAccess(client);
+    setAccessDays(client.access_days_remaining > 0 ? String(client.access_days_remaining) : '');
+    setShowAccessDialog(true);
+  };
+
+  const handleSetAccess = async () => {
+    const days = parseInt(accessDays, 10);
+    if (isNaN(days) || days < 0) {
+      toast.error('Geçerli bir gün sayısı girin (0 veya daha fazla)');
+      return;
+    }
+    setSettingAccess(true);
+    try {
+      const response = await apiClient.post(`/clients/${selectedClientForAccess.id}/set-access`, { days });
+      toast.success(response.data.message || `${days} gün erişim ayarlandı`);
+      setShowAccessDialog(false);
+      loadClients();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erişim süresi ayarlanamadı');
+    } finally {
+      setSettingAccess(false);
+    }
+  };
+
   const handleStatusChange = async (clientId, newStatus) => {
     try {
       await apiClient.put(`/clients/${clientId}`, { status: newStatus });
@@ -345,9 +374,14 @@ export const AdminClients = () => {
                   <span className="text-slate-500">Sektör:</span>
                   <span className="ml-1">{client.industry}</span>
                 </div>
-                <div>
+                <div className="flex items-center gap-1">
                   <span className="text-slate-500">Erişim:</span>
-                  <span className="ml-1">{client.access_days_remaining} gün</span>
+                  <span className={`ml-1 font-medium ${client.access_days_remaining <= 0 ? 'text-red-600' : client.access_days_remaining <= 7 ? 'text-orange-600' : 'text-green-700'}`}>
+                    {client.access_days_remaining} gün
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => openAccessDialog(client)} className="h-5 w-5 p-0 ml-1">
+                    <Clock className="h-3 w-3 text-slate-500" />
+                  </Button>
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -366,6 +400,14 @@ export const AdminClients = () => {
                   className="border-slate-300 text-slate-700"
                 >
                   <Settings className="h-4 w-4 mr-1" /> Hizmetler
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openAccessDialog(client)}
+                  className="border-blue-200 text-blue-700"
+                >
+                  <Clock className="h-4 w-4 mr-1" /> Süre
                 </Button>
                 <Button
                   size="sm"
@@ -481,7 +523,27 @@ export const AdminClients = () => {
                       Düzenle
                     </Button>
                   </TableCell>
-                  <TableCell>{client.access_days_remaining} gün</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium text-sm ${
+                        client.access_days_remaining <= 0 ? 'text-red-600' :
+                        client.access_days_remaining <= 7 ? 'text-orange-600' :
+                        'text-green-700'
+                      }`}>
+                        {client.access_days_remaining} gün
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openAccessDialog(client)}
+                        className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-50 text-xs"
+                        title="Erişim Süresi Ayarla"
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        Ayarla
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -711,6 +773,63 @@ export const AdminClients = () => {
             </Button>
             <Button onClick={handleUpdatePassword} className="bg-slate-900 hover:bg-black">
               Şifreyi Güncelle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Access Duration Dialog */}
+      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+        <DialogContent className="max-w-sm" aria-describedby="access-dialog-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Erişim Süresi Ayarla
+            </DialogTitle>
+            <DialogDescription id="access-dialog-description">
+              {selectedClientForAccess?.company_name} — mevcut: {selectedClientForAccess?.access_days_remaining ?? 0} gün kaldı
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="access-days">Gün Sayısı (bugünden itibaren)</Label>
+              <Input
+                id="access-days"
+                type="number"
+                min="0"
+                value={accessDays}
+                onChange={(e) => setAccessDays(e.target.value)}
+                placeholder="Örn: 30"
+                className="border-slate-300 text-center text-lg font-semibold"
+                onKeyDown={(e) => e.key === 'Enter' && handleSetAccess()}
+              />
+              <div className="flex gap-2 flex-wrap">
+                {[7, 14, 30, 60, 90, 180, 365].map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setAccessDays(String(d))}
+                    className="px-2 py-1 text-xs rounded border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors"
+                  >
+                    {d} gün
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                0 girerseniz erişim hemen kapatılır. Mevcut süre <strong>sıfırlanarak</strong> yeni süre başlar.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAccessDialog(false)}>
+              İptal
+            </Button>
+            <Button
+              onClick={handleSetAccess}
+              className="bg-slate-900 hover:bg-black"
+              disabled={settingAccess || accessDays === ''}
+            >
+              {settingAccess ? 'Kaydediliyor...' : 'Kaydet'}
             </Button>
           </DialogFooter>
         </DialogContent>
