@@ -2,16 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, BarChart3, Download, Filter,
   Users, ArrowUpRight, ArrowDownRight, Search, ChevronDown, ChevronUp,
-  RefreshCw, Plus, Eye, Calendar, Tag, Building2, FileText
+  RefreshCw, Plus, Tag, Building2, FileText, Edit2, Trash2, X
 } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 
 const fmt = (n) => `₺${parseFloat(n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
@@ -30,6 +32,15 @@ const monthLabel = (key) => {
   const [y, m] = key.split('-');
   const monthName = MONTHS.find(mo => mo.value === String(parseInt(m)))?.label || m;
   return `${monthName} ${y}`;
+};
+
+const EMPTY_FORM = {
+  client_id: '',
+  transaction_type: 'income',
+  amount: '',
+  transaction_date: new Date().toISOString().split('T')[0],
+  category: '',
+  description: '',
 };
 
 export const AdminAccounting = () => {
@@ -51,6 +62,12 @@ export const AdminAccounting = () => {
   // Client table sort
   const [sortField, setSortField] = useState('net');
   const [sortDir, setSortDir] = useState('desc');
+
+  // Dialog state
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -119,13 +136,80 @@ export const AdminAccounting = () => {
     }
   };
 
+  const openAddDialog = () => {
+    setEditingTx(null);
+    setForm(EMPTY_FORM);
+    setShowDialog(true);
+  };
+
+  const openEditDialog = (tx) => {
+    setEditingTx(tx);
+    setForm({
+      client_id: tx.client_id,
+      transaction_type: tx.transaction_type,
+      amount: String(tx.amount),
+      transaction_date: tx.transaction_date,
+      category: tx.category,
+      description: tx.description || '',
+    });
+    setShowDialog(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.client_id) { toast.error('Lütfen müşteri seçin'); return; }
+    if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Geçerli bir tutar girin'); return; }
+    if (!form.category) { toast.error('Kategori seçin'); return; }
+    if (!form.transaction_date) { toast.error('Tarih girin'); return; }
+
+    setSaving(true);
+    try {
+      const payload = {
+        transaction_type: form.transaction_type,
+        amount: parseFloat(form.amount),
+        transaction_date: form.transaction_date,
+        category: form.category,
+        description: form.description || null,
+      };
+
+      if (editingTx) {
+        await apiClient.put(`/client-finance/${form.client_id}/${editingTx.id}`, payload);
+        toast.success('İşlem güncellendi');
+      } else {
+        await apiClient.post(`/client-finance/${form.client_id}`, payload);
+        toast.success('İşlem eklendi');
+      }
+
+      setShowDialog(false);
+      loadOverview();
+      if (activeTab === 'transactions') loadTransactions();
+    } catch (e) {
+      console.error('Save error:', e);
+      toast.error(editingTx ? 'İşlem güncellenemedi' : 'İşlem eklenemedi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (tx) => {
+    if (!window.confirm(`"${getCategoryLabel(tx.category)}" işlemini silmek istediğinize emin misiniz?`)) return;
+    try {
+      await apiClient.delete(`/client-finance/${tx.client_id}/${tx.id}`);
+      toast.success('İşlem silindi');
+      loadOverview();
+      if (activeTab === 'transactions') loadTransactions();
+    } catch (e) {
+      console.error('Delete error:', e);
+      toast.error('İşlem silinemedi');
+    }
+  };
+
   const getCategoryLabel = (key) => {
     const c = categories.find(c => c.category_key === key);
     return c?.name_tr || key;
   };
 
   const exportCSV = () => {
-    const data = activeTab === 'transactions' ? transactions : [];
+    const data = filteredTransactions;
     if (!data.length) { toast.error('Dışa aktarılacak veri yok'); return; }
     const headers = ['Tarih', 'Müşteri', 'Tür', 'Kategori', 'Tutar', 'Açıklama'];
     const rows = data.map(t => [
@@ -182,6 +266,13 @@ export const AdminAccounting = () => {
     return Math.max(...vals, 1);
   }, [overview]);
 
+  // Filtered categories for form
+  const formCategories = useMemo(() => {
+    return categories.filter(c =>
+      c.category_type === form.transaction_type || c.category_type === 'both'
+    );
+  }, [categories, form.transaction_type]);
+
   if (loading && !overview) {
     return (
       <div className="p-6 lg:p-8">
@@ -214,9 +305,13 @@ export const AdminAccounting = () => {
           {activeTab === 'transactions' && (
             <Button variant="outline" onClick={exportCSV}>
               <Download className="h-4 w-4 mr-2" />
-              CSV İndir
+              CSV
             </Button>
           )}
+          <Button onClick={openAddDialog} className="bg-slate-900 hover:bg-black">
+            <Plus className="h-4 w-4 mr-2" />
+            Yeni İşlem
+          </Button>
         </div>
       </div>
 
@@ -319,7 +414,6 @@ export const AdminAccounting = () => {
 
         {/* OVERVIEW TAB */}
         <TabsContent value="overview">
-          {/* Monthly Trend Chart */}
           <Card className="p-4 lg:p-6 mb-6">
             <div className="flex items-center gap-2 mb-6">
               <BarChart3 className="h-5 w-5 text-slate-700" />
@@ -329,6 +423,9 @@ export const AdminAccounting = () => {
               <div className="text-center py-12 text-slate-400">
                 <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p>Bu dönemde veri yok</p>
+                <Button onClick={openAddDialog} className="mt-4 bg-slate-900 hover:bg-black">
+                  <Plus className="h-4 w-4 mr-2" />İlk İşlemi Ekle
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -371,7 +468,6 @@ export const AdminAccounting = () => {
             </div>
           </Card>
 
-          {/* Top 5 clients */}
           <Card className="p-4 lg:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-slate-700" />
@@ -390,17 +486,19 @@ export const AdminAccounting = () => {
                         <span className="text-sm font-semibold text-emerald-700 ml-2">{fmt(c.income)}</span>
                       </div>
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-400 rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
+                        <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   </div>
                 );
               })}
               {(overview?.client_summary || []).length === 0 && (
-                <p className="text-slate-400 text-sm text-center py-8">Veri bulunamadı</p>
+                <div className="text-center py-8">
+                  <p className="text-slate-400 text-sm mb-4">Henüz işlem kaydedilmemiş</p>
+                  <Button onClick={openAddDialog} className="bg-slate-900 hover:bg-black">
+                    <Plus className="h-4 w-4 mr-2" />Yeni İşlem Ekle
+                  </Button>
+                </div>
               )}
             </div>
           </Card>
@@ -420,44 +518,24 @@ export const AdminAccounting = () => {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Müşteri
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700 select-none"
-                      onClick={() => toggleSort('income')}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        Gelir <SortIcon field="income" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700 select-none"
-                      onClick={() => toggleSort('expense')}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        Gider <SortIcon field="expense" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700 select-none"
-                      onClick={() => toggleSort('net')}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        Net <SortIcon field="net" />
-                      </div>
-                    </th>
-                    <th
-                      className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700 select-none"
-                      onClick={() => toggleSort('transaction_count')}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        İşlem <SortIcon field="transaction_count" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Kar Oranı
-                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Müşteri</th>
+                    {[
+                      { field: 'income', label: 'Gelir' },
+                      { field: 'expense', label: 'Gider' },
+                      { field: 'net', label: 'Net' },
+                      { field: 'transaction_count', label: 'İşlem' },
+                    ].map(({ field, label }) => (
+                      <th
+                        key={field}
+                        className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700 select-none"
+                        onClick={() => toggleSort(field)}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          {label} <SortIcon field={field} />
+                        </div>
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Kar Oranı</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -465,7 +543,10 @@ export const AdminAccounting = () => {
                     <tr>
                       <td colSpan={6} className="text-center py-12 text-slate-400">
                         <Building2 className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                        <p>Bu dönemde müşteri verisi yok</p>
+                        <p className="mb-4">Bu dönemde müşteri verisi yok</p>
+                        <Button onClick={openAddDialog} className="bg-slate-900 hover:bg-black">
+                          <Plus className="h-4 w-4 mr-2" />Yeni İşlem Ekle
+                        </Button>
                       </td>
                     </tr>
                   ) : sortedClients.map((c) => {
@@ -475,16 +556,12 @@ export const AdminAccounting = () => {
                         <td className="px-4 py-3">
                           <div>
                             <p className="font-medium text-slate-900">{c.company_name}</p>
-                            {c.contact_name && (
-                              <p className="text-xs text-slate-400">{c.contact_name}</p>
-                            )}
+                            {c.contact_name && <p className="text-xs text-slate-400">{c.contact_name}</p>}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right font-medium text-emerald-700">{fmt(c.income)}</td>
                         <td className="px-4 py-3 text-right font-medium text-red-600">{fmt(c.expense)}</td>
-                        <td className={`px-4 py-3 text-right font-semibold ${c.net >= 0 ? 'text-blue-700' : 'text-orange-600'}`}>
-                          {fmt(c.net)}
-                        </td>
+                        <td className={`px-4 py-3 text-right font-semibold ${c.net >= 0 ? 'text-blue-700' : 'text-orange-600'}`}>{fmt(c.net)}</td>
                         <td className="px-4 py-3 text-right text-slate-600">{c.transaction_count}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
@@ -509,9 +586,7 @@ export const AdminAccounting = () => {
                       <td className="px-4 py-3 font-semibold text-slate-700">TOPLAM</td>
                       <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmt(summary.total_income)}</td>
                       <td className="px-4 py-3 text-right font-bold text-red-600">{fmt(summary.total_expense)}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${(summary.net_profit || 0) >= 0 ? 'text-blue-700' : 'text-orange-600'}`}>
-                        {fmt(summary.net_profit)}
-                      </td>
+                      <td className={`px-4 py-3 text-right font-bold ${(summary.net_profit || 0) >= 0 ? 'text-blue-700' : 'text-orange-600'}`}>{fmt(summary.net_profit)}</td>
                       <td className="px-4 py-3 text-right font-bold text-slate-700">{summary.transaction_count || 0}</td>
                       <td />
                     </tr>
@@ -524,7 +599,6 @@ export const AdminAccounting = () => {
 
         {/* TRANSACTIONS TAB */}
         <TabsContent value="transactions">
-          {/* Transaction Filters */}
           <div className="flex flex-wrap gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
             <Select value={filterClient} onValueChange={setFilterClient}>
               <SelectTrigger className="w-52 h-9">
@@ -532,14 +606,12 @@ export const AdminAccounting = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tüm Müşteriler</SelectItem>
-                {clients.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>
-                ))}
+                {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-36 h-9">
-                <SelectValue placeholder="Tümü" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tümü</SelectItem>
@@ -560,20 +632,21 @@ export const AdminAccounting = () => {
 
           {txLoading ? (
             <div className="space-y-2">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />
-              ))}
+              {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
             </div>
           ) : filteredTransactions.length === 0 ? (
             <Card className="p-12 text-center">
               <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
               <h3 className="font-medium text-slate-700 mb-1">İşlem bulunamadı</h3>
-              <p className="text-sm text-slate-500">Filtre kriterlerinizi değiştirmeyi deneyin</p>
+              <p className="text-sm text-slate-500 mb-4">Filtre kriterlerinizi değiştirin veya yeni işlem ekleyin</p>
+              <Button onClick={openAddDialog} className="bg-slate-900 hover:bg-black">
+                <Plus className="h-4 w-4 mr-2" />Yeni İşlem Ekle
+              </Button>
             </Card>
           ) : (
             <div className="space-y-2">
               {filteredTransactions.map(t => (
-                <Card key={t.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                <Card key={t.id} className="px-4 py-3 hover:bg-slate-50 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className={`p-2 rounded-lg flex-shrink-0 ${t.transaction_type === 'income' ? 'bg-emerald-100' : 'bg-red-100'}`}>
                       {t.transaction_type === 'income'
@@ -597,9 +670,27 @@ export const AdminAccounting = () => {
                         {new Date(t.transaction_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     </div>
-                    <p className={`font-bold text-sm flex-shrink-0 ${t.transaction_type === 'income' ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {t.transaction_type === 'income' ? '+' : '-'}{fmt(t.amount)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-bold text-sm flex-shrink-0 ${t.transaction_type === 'income' ? 'text-emerald-700' : 'text-red-600'}`}>
+                        {t.transaction_type === 'income' ? '+' : '-'}{fmt(t.amount)}
+                      </p>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditDialog(t)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Düzenle"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(t)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -631,75 +722,54 @@ export const AdminAccounting = () => {
         {/* CATEGORIES TAB */}
         <TabsContent value="categories">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Income categories */}
             <Card className="p-4 lg:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
                 <h2 className="font-semibold text-slate-900">Gelir Kategorileri</h2>
               </div>
               {(() => {
-                const incomeItems = (overview?.category_breakdown || [])
-                  .filter(c => c.income > 0)
-                  .sort((a, b) => b.income - a.income);
-                const maxVal = Math.max(...incomeItems.map(c => c.income), 1);
-                return incomeItems.length === 0
+                const items = (overview?.category_breakdown || []).filter(c => c.income > 0).sort((a, b) => b.income - a.income);
+                const maxVal = Math.max(...items.map(c => c.income), 1);
+                return items.length === 0
                   ? <p className="text-slate-400 text-sm text-center py-8">Bu dönemde gelir kaydı yok</p>
-                  : (
-                    <div className="space-y-3">
-                      {incomeItems.map(c => (
-                        <div key={c.category}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-slate-700">{getCategoryLabel(c.category)}</span>
-                            <span className="text-sm font-semibold text-emerald-700">{fmt(c.income)}</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-400 rounded-full"
-                              style={{ width: `${(c.income / maxVal) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                  : items.map(c => (
+                    <div key={c.category} className="mb-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-slate-700">{getCategoryLabel(c.category)}</span>
+                        <span className="text-sm font-semibold text-emerald-700">{fmt(c.income)}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(c.income / maxVal) * 100}%` }} />
+                      </div>
                     </div>
-                  );
+                  ));
               })()}
             </Card>
 
-            {/* Expense categories */}
             <Card className="p-4 lg:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingDown className="h-5 w-5 text-red-600" />
                 <h2 className="font-semibold text-slate-900">Gider Kategorileri</h2>
               </div>
               {(() => {
-                const expenseItems = (overview?.category_breakdown || [])
-                  .filter(c => c.expense > 0)
-                  .sort((a, b) => b.expense - a.expense);
-                const maxVal = Math.max(...expenseItems.map(c => c.expense), 1);
-                return expenseItems.length === 0
+                const items = (overview?.category_breakdown || []).filter(c => c.expense > 0).sort((a, b) => b.expense - a.expense);
+                const maxVal = Math.max(...items.map(c => c.expense), 1);
+                return items.length === 0
                   ? <p className="text-slate-400 text-sm text-center py-8">Bu dönemde gider kaydı yok</p>
-                  : (
-                    <div className="space-y-3">
-                      {expenseItems.map(c => (
-                        <div key={c.category}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-slate-700">{getCategoryLabel(c.category)}</span>
-                            <span className="text-sm font-semibold text-red-600">{fmt(c.expense)}</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-red-400 rounded-full"
-                              style={{ width: `${(c.expense / maxVal) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                  : items.map(c => (
+                    <div key={c.category} className="mb-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-slate-700">{getCategoryLabel(c.category)}</span>
+                        <span className="text-sm font-semibold text-red-600">{fmt(c.expense)}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-red-400 rounded-full" style={{ width: `${(c.expense / maxVal) * 100}%` }} />
+                      </div>
                     </div>
-                  );
+                  ));
               })()}
             </Card>
 
-            {/* Summary table */}
             <Card className="lg:col-span-2 p-4 lg:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Tag className="h-5 w-5 text-slate-600" />
@@ -730,9 +800,7 @@ export const AdminAccounting = () => {
                         );
                       })}
                     {(overview?.category_breakdown || []).length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="text-center py-8 text-slate-400">Kategori verisi yok</td>
-                      </tr>
+                      <tr><td colSpan={4} className="text-center py-8 text-slate-400">Kategori verisi yok</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -741,6 +809,153 @@ export const AdminAccounting = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Add / Edit Transaction Dialog */}
+      <Dialog open={showDialog} onOpenChange={(open) => { if (!open) setShowDialog(false); }}>
+        <DialogContent className="sm:max-w-lg" aria-describedby="accounting-dialog-desc">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingTx ? <Edit2 className="h-5 w-5 text-blue-600" /> : <Plus className="h-5 w-5 text-emerald-600" />}
+              {editingTx ? 'İşlemi Düzenle' : 'Yeni İşlem Ekle'}
+            </DialogTitle>
+            <DialogDescription id="accounting-dialog-desc">
+              {editingTx ? 'Mevcut işlemi güncelleyin.' : 'Müşteri için gelir veya gider kaydı oluşturun.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Client select */}
+            <div className="space-y-1.5">
+              <Label>Müşteri *</Label>
+              <Select
+                value={form.client_id}
+                onValueChange={v => setForm({ ...form, client_id: v })}
+                disabled={!!editingTx}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Müşteri seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editingTx && <p className="text-xs text-slate-400">Düzenleme sırasında müşteri değiştirilemez</p>}
+            </div>
+
+            {/* Type toggle */}
+            <div className="space-y-1.5">
+              <Label>İşlem Türü *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, transaction_type: 'income', category: '' })}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                    form.transaction_type === 'income'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Gelir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, transaction_type: 'expense', category: '' })}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                    form.transaction_type === 'expense'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  <TrendingDown className="h-4 w-4" />
+                  Gider
+                </button>
+              </div>
+            </div>
+
+            {/* Amount */}
+            <div className="space-y-1.5">
+              <Label htmlFor="amount">Tutar (₺) *</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₺</span>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0,00"
+                  className="pl-8"
+                  value={form.amount}
+                  onChange={e => setForm({ ...form, amount: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div className="space-y-1.5">
+              <Label>Kategori *</Label>
+              <Select
+                value={form.category}
+                onValueChange={v => setForm({ ...form, category: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Kategori seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formCategories.length === 0 ? (
+                    <SelectItem value="_" disabled>Kategori bulunamadı</SelectItem>
+                  ) : formCategories.map(c => (
+                    <SelectItem key={c.category_key} value={c.category_key}>{c.name_tr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-date">Tarih *</Label>
+              <Input
+                id="tx-date"
+                type="date"
+                value={form.transaction_date}
+                onChange={e => setForm({ ...form, transaction_date: e.target.value })}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-desc">Açıklama</Label>
+              <Input
+                id="tx-desc"
+                placeholder="İsteğe bağlı not veya açıklama"
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowDialog(false)}
+                disabled={saving}
+              >
+                İptal
+              </Button>
+              <Button
+                className={`flex-1 ${form.transaction_type === 'income' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Kaydediliyor...' : editingTx ? 'Güncelle' : form.transaction_type === 'income' ? 'Gelir Ekle' : 'Gider Ekle'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1538,7 +1538,7 @@ async def get_admin_finance_clients(user: dict = Depends(get_current_user)):
     if user.get('role') not in ['admin']:
         raise HTTPException(status_code=403, detail="Yetki yok")
     try:
-        response = supabase.table('clients').select('id, company_name, contact_name').eq('client_status', 'active').order('company_name').execute()
+        response = supabase.table('clients').select('id, company_name, contact_name').order('company_name').execute()
         return response.data or []
     except Exception as e:
         logging.error(f"Admin finance clients error: {e}")
