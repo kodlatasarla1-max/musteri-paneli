@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Key, Mail, User, UserPlus } from 'lucide-react';
+import { Plus, Edit, Trash2, Key, Mail, User, UserPlus, Settings } from 'lucide-react';
 import apiClient from '../../utils/api';
 import { toast } from 'sonner';
 import { Card } from '../../components/ui/card';
@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import {
   Dialog,
@@ -28,16 +29,22 @@ import { tr } from '../../utils/translations';
 
 export const AdminClients = () => {
   const [clients, setClients] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showServicesDialog, setShowServicesDialog] = useState(false);
   const [selectedClientForPassword, setSelectedClientForPassword] = useState(null);
   const [selectedClientForUser, setSelectedClientForUser] = useState(null);
+  const [selectedClientForServices, setSelectedClientForServices] = useState(null);
+  const [clientServiceStates, setClientServiceStates] = useState({});
   const [newPassword, setNewPassword] = useState('');
   const [newUserData, setNewUserData] = useState({ email: '', password: '' });
   const [creatingUser, setCreatingUser] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [savingServices, setSavingServices] = useState(false);
   const [formData, setFormData] = useState({
     company_name: '',
     contact_name: '',
@@ -50,6 +57,7 @@ export const AdminClients = () => {
 
   useEffect(() => {
     loadClients();
+    loadServices();
   }, []);
 
   const loadClients = async () => {
@@ -64,16 +72,58 @@ export const AdminClients = () => {
     }
   };
 
+  const loadServices = async () => {
+    try {
+      const response = await apiClient.get('/services');
+      setAvailableServices(response.data);
+    } catch (error) {
+      console.error('Error loading services:', error);
+    }
+  };
+
+  const loadClientServices = async (clientId) => {
+    try {
+      const response = await apiClient.get(`/client-services/${clientId}`);
+      const enabledIds = response.data
+        .filter(s => s.is_active || s.is_enabled)
+        .map(s => s.service_id);
+      setSelectedServices(enabledIds);
+    } catch (error) {
+      console.error('Error loading client services:', error);
+      setSelectedServices([]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let clientId;
       if (editingClient) {
         await apiClient.put(`/clients/${editingClient.id}`, formData);
+        clientId = editingClient.id;
         toast.success(tr.admin.clients.clientUpdated);
       } else {
-        await apiClient.post('/clients', formData);
+        const response = await apiClient.post('/clients', formData);
+        clientId = response.data.id;
         toast.success(tr.admin.clients.clientCreated);
       }
+
+      // Save selected services
+      if (clientId && availableServices.length > 0) {
+        for (const service of availableServices) {
+          const isEnabled = selectedServices.includes(service.id);
+          try {
+            await apiClient.post('/client-services', {
+              client_id: clientId,
+              service_id: service.id,
+              is_enabled: isEnabled
+            });
+          } catch (err) {
+            console.error('Error toggling service:', err);
+          }
+        }
+      }
+
       setShowDialog(false);
       resetForm();
       loadClients();
@@ -84,7 +134,6 @@ export const AdminClients = () => {
 
   const handleDelete = async (clientId) => {
     if (!window.confirm(tr.admin.clients.deleteConfirm)) return;
-    
     try {
       await apiClient.delete(`/clients/${clientId}`);
       toast.success(tr.admin.clients.clientDeleted);
@@ -104,10 +153,11 @@ export const AdminClients = () => {
       status: 'active',
       access_days_remaining: 30
     });
+    setSelectedServices([]);
     setEditingClient(null);
   };
 
-  const openEditDialog = (client) => {
+  const openEditDialog = async (client) => {
     setEditingClient(client);
     setFormData({
       company_name: client.company_name,
@@ -118,16 +168,54 @@ export const AdminClients = () => {
       status: client.status,
       access_days_remaining: client.access_days_remaining
     });
+    await loadClientServices(client.id);
     setShowDialog(true);
   };
 
-  // Password management functions
+  const openAddDialog = async () => {
+    resetForm();
+    setShowDialog(true);
+  };
+
+  const openServicesDialog = async (client) => {
+    setSelectedClientForServices(client);
+    await loadClientServices(client.id);
+    setShowServicesDialog(true);
+  };
+
+  const handleSaveServices = async () => {
+    if (!selectedClientForServices) return;
+    setSavingServices(true);
+    try {
+      for (const service of availableServices) {
+        const isEnabled = selectedServices.includes(service.id);
+        await apiClient.post('/client-services', {
+          client_id: selectedClientForServices.id,
+          service_id: service.id,
+          is_enabled: isEnabled
+        });
+      }
+      toast.success('Hizmetler güncellendi');
+      setShowServicesDialog(false);
+      loadClients();
+    } catch (error) {
+      toast.error('Hizmetler güncellenemedi');
+    } finally {
+      setSavingServices(false);
+    }
+  };
+
+  const toggleService = (serviceId) => {
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
   const handleOpenCreateUserDialog = (client) => {
     setSelectedClientForUser(client);
-    setNewUserData({ 
-      email: client.contact_email, 
-      password: '' 
-    });
+    setNewUserData({ email: client.contact_email, password: '' });
     setShowCreateUserDialog(true);
   };
 
@@ -214,7 +302,7 @@ export const AdminClients = () => {
   };
 
   if (loading) {
-    return <div className="p-4 lg:p-8">Loading...</div>;
+    return <div className="p-4 lg:p-8">Yükleniyor...</div>;
   }
 
   return (
@@ -224,7 +312,7 @@ export const AdminClients = () => {
           <h1 className="text-2xl lg:text-4xl font-medium text-slate-900" data-testid="clients-title">{tr.admin.clients.title}</h1>
           <p className="text-sm lg:text-base text-slate-600 mt-1 lg:mt-2">Müşteri profillerini ve hizmet erişimlerini yönetin</p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-slate-900 hover:bg-black w-full sm:w-auto" data-testid="add-client-button">
+        <Button onClick={openAddDialog} className="bg-slate-900 hover:bg-black w-full sm:w-auto" data-testid="add-client-button">
           <Plus className="h-4 w-4 mr-2" />
           {tr.admin.clients.addClient}
         </Button>
@@ -262,7 +350,7 @@ export const AdminClients = () => {
                   <span className="ml-1">{client.access_days_remaining} gün</span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
@@ -270,6 +358,14 @@ export const AdminClients = () => {
                   className="flex-1 border-slate-300 text-slate-900"
                 >
                   <Edit className="h-4 w-4 mr-1" /> Düzenle
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openServicesDialog(client)}
+                  className="border-slate-300 text-slate-700"
+                >
+                  <Settings className="h-4 w-4 mr-1" /> Hizmetler
                 </Button>
                 <Button
                   size="sm"
@@ -295,6 +391,7 @@ export const AdminClients = () => {
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.industry}</TableHead>
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.status}</TableHead>
               <TableHead className="text-slate-900 font-semibold">Hesap</TableHead>
+              <TableHead className="text-slate-900 font-semibold">Hizmetler</TableHead>
               <TableHead className="text-slate-900 font-semibold">{tr.admin.clients.accessDays}</TableHead>
               <TableHead className="text-right text-slate-900 font-semibold">{tr.common.actions}</TableHead>
             </TableRow>
@@ -302,7 +399,7 @@ export const AdminClients = () => {
           <TableBody>
             {clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-600">
+                <TableCell colSpan={8} className="text-center py-8 text-slate-600">
                   {tr.admin.clients.noClients}
                 </TableCell>
               </TableRow>
@@ -318,8 +415,8 @@ export const AdminClients = () => {
                   </TableCell>
                   <TableCell>{client.industry}</TableCell>
                   <TableCell>
-                    <Select 
-                      value={client.status} 
+                    <Select
+                      value={client.status}
                       onValueChange={(val) => handleStatusChange(client.id, val)}
                     >
                       <SelectTrigger className="w-28 h-8 text-xs">
@@ -334,7 +431,7 @@ export const AdminClients = () => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    {client.user_id ? (
+                    {client.has_user_account ? (
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary" className="bg-green-100 text-green-800">
                           <User className="h-3 w-3 mr-1" />
@@ -373,6 +470,17 @@ export const AdminClients = () => {
                       </Button>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openServicesDialog(client)}
+                      className="border-slate-300 text-slate-700 text-xs"
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Düzenle
+                    </Button>
+                  </TableCell>
                   <TableCell>{client.access_days_remaining} gün</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -403,11 +511,12 @@ export const AdminClients = () => {
         </Table>
       </Card>
 
+      {/* Add/Edit Client Dialog */}
       <Dialog open={showDialog} onOpenChange={(open) => {
         setShowDialog(open);
         if (!open) resetForm();
       }}>
-        <DialogContent data-testid="client-dialog" aria-describedby="client-dialog-description">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="client-dialog" aria-describedby="client-dialog-description">
           <DialogHeader>
             <DialogTitle>{editingClient ? tr.admin.clients.editClient : tr.admin.clients.addClient}</DialogTitle>
             <DialogDescription id="client-dialog-description">
@@ -472,6 +581,31 @@ export const AdminClients = () => {
                   data-testid="industry-input"
                 />
               </div>
+
+              {/* Service Selection */}
+              {availableServices.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <Label className="text-sm font-semibold text-slate-900">Alınan Hizmetler</Label>
+                  <div className="grid grid-cols-1 gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    {availableServices.map((service) => (
+                      <div key={service.id} className="flex items-center gap-3">
+                        <Checkbox
+                          id={`service-${service.id}`}
+                          checked={selectedServices.includes(service.id)}
+                          onCheckedChange={() => toggleService(service.id)}
+                          className="border-slate-400"
+                        />
+                        <label
+                          htmlFor={`service-${service.id}`}
+                          className="text-sm text-slate-700 cursor-pointer flex-1"
+                        >
+                          {service.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
@@ -482,6 +616,60 @@ export const AdminClients = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Services Management Dialog */}
+      <Dialog open={showServicesDialog} onOpenChange={setShowServicesDialog}>
+        <DialogContent className="max-w-md" aria-describedby="services-dialog-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Hizmet Yönetimi
+            </DialogTitle>
+            <DialogDescription id="services-dialog-description">
+              {selectedClientForServices?.company_name} için aktif hizmetleri seçin
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {availableServices.length === 0 ? (
+              <p className="text-slate-500 text-sm">Hizmet bulunamadı</p>
+            ) : (
+              <div className="space-y-2">
+                {availableServices.map((service) => (
+                  <div key={service.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <Checkbox
+                      id={`srv-${service.id}`}
+                      checked={selectedServices.includes(service.id)}
+                      onCheckedChange={() => toggleService(service.id)}
+                      className="border-slate-400"
+                    />
+                    <label
+                      htmlFor={`srv-${service.id}`}
+                      className="text-sm font-medium text-slate-700 cursor-pointer flex-1"
+                    >
+                      {service.name}
+                    </label>
+                    {selectedServices.includes(service.id) && (
+                      <span className="text-xs text-green-600 font-medium">Aktif</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowServicesDialog(false)}>
+              İptal
+            </Button>
+            <Button
+              onClick={handleSaveServices}
+              className="bg-slate-900 hover:bg-black"
+              disabled={savingServices}
+            >
+              {savingServices ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -506,9 +694,9 @@ export const AdminClients = () => {
                   className="border-slate-300"
                   data-testid="new-password-input"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={generatePassword}
                   className="border-slate-300"
                 >
@@ -563,9 +751,9 @@ export const AdminClients = () => {
                   className="border-slate-300"
                   data-testid="new-user-password-input"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => {
                     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
                     let pass = '';
@@ -586,12 +774,12 @@ export const AdminClients = () => {
             <Button variant="outline" onClick={() => setShowCreateUserDialog(false)}>
               İptal
             </Button>
-            <Button 
-              onClick={handleCreateUserWithCredentials} 
+            <Button
+              onClick={handleCreateUserWithCredentials}
               className="bg-slate-900 hover:bg-black"
               disabled={creatingUser}
             >
-              {creatingUser ? 'Oluşturuluyor...' : 'Hesabı Oluştur'}
+              {creatingUser ? 'Oluşturuluyor...' : 'Hesap Oluştur ve Gönder'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -40,7 +40,7 @@ export const ClientVideos = () => {
       setEvents(eventsRes.data.filter(e => e.event_type === 'shoot'));
     } catch (error) {
       console.error('Error loading videos:', error);
-      toast.error('Failed to load videos');
+      toast.error('Videolar yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -51,12 +51,12 @@ export const ClientVideos = () => {
       await apiClient.put(`/videos/${videoId}/status`, null, {
         params: { status: newStatus, notes }
       });
-      toast.success('Status updated successfully');
+      toast.success('Durum başarıyla güncellendi');
       setSelectedVideo(null);
       setNotes('');
       loadData();
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error('Durum güncellenemedi');
     }
   };
 
@@ -74,38 +74,40 @@ export const ClientVideos = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'approved':
-        return 'Approved';
+        return 'Onaylandı';
       case 'revision_requested':
-        return 'Revision Requested';
+        return 'Revizyon İstendi';
+      case 'uploaded':
+        return 'Yüklendi';
       default:
-        return 'Uploaded';
+        return status;
     }
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <div className="p-8">Yükleniyor...</div>;
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto" data-testid="client-videos-page">
-      <h1 className="text-4xl font-medium text-slate-900 mb-8" data-testid="videos-title">Video Production</h1>
+    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto" data-testid="client-videos-page">
+      <h1 className="text-2xl lg:text-4xl font-medium text-slate-900 mb-6 lg:mb-8" data-testid="videos-title">Video Üretimi</h1>
 
       <div className="mb-8">
-        <h2 className="text-2xl font-medium text-slate-900 mb-4">Upcoming Shoots</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <h2 className="text-xl lg:text-2xl font-medium text-slate-900 mb-4">Yaklaşan Çekimler</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
           {events.length === 0 ? (
             <Card className="p-6 col-span-2" data-testid="no-upcoming-shoots">
-              <p className="text-slate-600">No upcoming shoots scheduled</p>
+              <p className="text-slate-600">Planlanmış çekim bulunmuyor</p>
             </Card>
           ) : (
             events.map((event) => (
               <Card key={event.id} className="p-6" data-testid={`shoot-event-${event.id}`}>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">{event.title}</h3>
                 <p className="text-sm text-slate-600 mb-4">
-                  {new Date(event.event_date).toLocaleString()}
+                  {new Date(event.event_date).toLocaleString('tr-TR')}
                 </p>
                 {event.location && (
-                  <p className="text-sm text-slate-600 mb-2">Location: {event.location}</p>
+                  <p className="text-sm text-slate-600 mb-2">Konum: {event.location}</p>
                 )}
               </Card>
             ))
@@ -114,15 +116,15 @@ export const ClientVideos = () => {
       </div>
 
       <div>
-        <h2 className="text-2xl font-medium text-slate-900 mb-4">Video Gallery</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-xl lg:text-2xl font-medium text-slate-900 mb-4">Video Galerisi</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {videos.length === 0 ? (
             <Card className="p-6 col-span-3" data-testid="no-videos">
-              <p className="text-slate-600">No videos yet</p>
+              <p className="text-slate-600">Henüz video bulunmuyor</p>
             </Card>
           ) : (
             videos.map((video) => (
-              <Card key={video.id} className="overflow-hidden card-shadow" data-testid={`video-card-${video.id}`}>
+              <Card key={video.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow" data-testid={`video-card-${video.id}`}>
                 <div className="aspect-video bg-slate-200 relative flex items-center justify-center">
                   <Video className="h-12 w-12 text-slate-400" />
                 </div>
@@ -138,17 +140,19 @@ export const ClientVideos = () => {
                       <Button
                         size="sm"
                         onClick={() => setSelectedVideo({ ...video, action: 'approve' })}
+                        className="bg-slate-900 hover:bg-black"
                         data-testid={`approve-video-${video.id}`}
                       >
-                        Approve
+                        Onayla
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setSelectedVideo({ ...video, action: 'revision' })}
+                        className="border-slate-300"
                         data-testid={`request-revision-${video.id}`}
                       >
-                        Request Revision
+                        Revizyon İste
                       </Button>
                     </div>
                   )}
@@ -163,25 +167,27 @@ export const ClientVideos = () => {
         <DialogContent data-testid="status-update-dialog">
           <DialogHeader>
             <DialogTitle>
-              {selectedVideo?.action === 'approve' ? 'Approve Video' : 'Request Revision'}
+              {selectedVideo?.action === 'approve' ? 'Videoyu Onayla' : 'Revizyon İste'}
             </DialogTitle>
             <DialogDescription>
               {selectedVideo?.action === 'approve'
-                ? 'Approve this video to mark it as final.'
-                : 'Request changes to this video.'}
+                ? 'Bu videoyu final olarak onaylayın.'
+                : 'Bu video için değişiklik isteyin.'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
-              placeholder="Add notes (optional)"
+              placeholder="Not ekleyin (isteğe bağlı)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              className="border-slate-300"
               data-testid="notes-textarea"
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedVideo(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setSelectedVideo(null)}>İptal</Button>
             <Button
+              className="bg-slate-900 hover:bg-black"
               onClick={() =>
                 handleStatusUpdate(
                   selectedVideo?.id,
@@ -190,7 +196,7 @@ export const ClientVideos = () => {
               }
               data-testid="confirm-status-button"
             >
-              Confirm
+              Onayla
             </Button>
           </DialogFooter>
         </DialogContent>

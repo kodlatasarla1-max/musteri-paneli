@@ -721,6 +721,10 @@ async def get_clients(user: dict = Depends(require_admin_or_staff)):
         # Get pending receipts count for all clients
         pending_response = supabase.table('receipts').select('client_id').in_('client_id', client_ids).eq('status', 'pending').execute()
         
+        # Get which clients have a user account (profile with client_id)
+        profiles_response = supabase.table('profiles').select('client_id').in_('client_id', client_ids).execute()
+        profile_client_ids = {p['client_id'] for p in (profiles_response.data or [])}
+        
         # Create lookup maps
         access_map = {}
         for access in (access_response.data or []):
@@ -744,6 +748,7 @@ async def get_clients(user: dict = Depends(require_admin_or_staff)):
         for client in response.data:
             client_data = dict(client)
             cid = client['id']
+            client_data['has_user_account'] = cid in profile_client_ids
             
             if cid in access_map:
                 active_access = access_map[cid]
