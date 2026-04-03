@@ -3380,15 +3380,7 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
         
         email_sent = await send_email(email, template.get('subject', 'Hoş Geldiniz'), email_body)
         
-        # Create audit log
-        supabase.table('audit_logs').insert({
-            'actor_user_id': user['id'],
-            'action': 'create_client_user',
-            'resource_type': 'client',
-            'resource_id': client_id,
-            'details': {'email': email, 'email_sent': email_sent},
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }).execute()
+        log_audit(user['id'], user.get('email', ''), 'create_client_user', 'client', client_id, client_id, None, {'email': email, 'email_sent': email_sent})
         
         return {
             "message": "Kullanıcı hesabı oluşturuldu",
@@ -3462,15 +3454,7 @@ async def create_client_user_manual(client_id: str, data: ClientUserCreate, user
         
         email_sent = await send_email(email, template.get('subject', 'Hoş Geldiniz'), email_body)
         
-        # Create audit log
-        supabase.table('audit_logs').insert({
-            'actor_user_id': user['id'],
-            'action': 'create_client_user_manual',
-            'resource_type': 'client',
-            'resource_id': client_id,
-            'details': {'email': email, 'email_sent': email_sent},
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }).execute()
+        log_audit(user['id'], user.get('email', ''), 'create_client_user_manual', 'client', client_id, client_id, None, {'email': email, 'email_sent': email_sent})
         
         return {
             "message": "Kullanıcı hesabı oluşturuldu",
@@ -3504,15 +3488,7 @@ async def update_client_password(client_id: str, data: ClientPasswordUpdate, use
             "password": data.new_password
         })
         
-        # Create audit log
-        supabase.table('audit_logs').insert({
-            'actor_user_id': user['id'],
-            'action': 'update_client_password',
-            'resource_type': 'client',
-            'resource_id': client_id,
-            'details': {'email': client.data['contact_email']},
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }).execute()
+        log_audit(user['id'], user.get('email', ''), 'update_client_password', 'client', client_id, client_id, None, {'email': client.data['contact_email']})
         
         return {"message": "Şifre güncellendi", "success": True}
     except HTTPException:
