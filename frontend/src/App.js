@@ -26,6 +26,7 @@ import { AdminRevisions } from "./pages/admin/AdminRevisions";
 import { AdminCampaigns } from "./pages/admin/AdminCampaigns";
 import { AdminLogs } from "./pages/admin/AdminLogs";
 import AdminMailSettings from "./pages/admin/AdminMailSettings";
+import { AdminClientServices } from "./pages/admin/AdminClientServices";
 import { NotificationCenter } from "./pages/shared/NotificationCenter";
 import { NoPermission } from "./pages/shared/NoPermission";
 import { getUser } from "./utils/auth";
@@ -98,6 +99,7 @@ function App() {
           >
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="clients" element={<AdminClients />} />
+            <Route path="client-services" element={<AdminClientServices />} />
             <Route path="staff" element={<AdminStaff />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="calendar" element={<AdminCalendar />} />
