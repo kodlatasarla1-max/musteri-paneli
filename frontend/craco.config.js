@@ -100,6 +100,11 @@ webpackConfig.devServer = (devServerConfig) => {
     };
   }
 
+  // Replit proxy configuration
+  devServerConfig.host = "0.0.0.0";
+  devServerConfig.port = 5000;
+  devServerConfig.allowedHosts = "all";
+
   return devServerConfig;
 };
 

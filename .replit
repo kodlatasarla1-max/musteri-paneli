@@ -1,0 +1,69 @@
+modules = ["nodejs-20", "python-3.12", "web"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+REACT_APP_SUPABASE_URL = "https://uockujaxzcgofeoovkgj.supabase.co"
+REACT_APP_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY2t1amF4emNnb2Zlb292a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NzU3NjYsImV4cCI6MjA5MDU1MTc2Nn0.2xAxN1I048Dm-4QqREKLxyxLHpCu-1g7E_pgC1NIYbc"
+SUPABASE_URL = "https://uockujaxzcgofeoovkgj.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY2t1amF4emNnb2Zlb292a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NzU3NjYsImV4cCI6MjA5MDU1MTc2Nn0.2xAxN1I048Dm-4QqREKLxyxLHpCu-1g7E_pgC1NIYbc"
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY2t1amF4emNnb2Zlb292a2dqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDk3NTc2NiwiZXhwIjoyMDkwNTUxNzY2fQ.f89l3mQqHeN93f9-O3usFqkejPYNmn2utdfV62Sc9u8"
+REACT_APP_BACKEND_URL = "https://f3bdb423-e110-42d4-bd0c-28d61efc41cf-00-z7duysdsupjx.sisko.replit.dev:8000"
+FRONTEND_URL = "https://f3bdb423-e110-42d4-bd0c-28d61efc41cf-00-z7duysdsupjx.sisko.replit.dev"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend API"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && PORT=5000 npm start"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Backend API"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && uvicorn server:app --host 0.0.0.0 --port 8000"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "cd backend && uvicorn server:app --host 0.0.0.0 --port 5000"]
+build = ["bash", "-c", "cd frontend && npm install --legacy-peer-deps && npm run build && cd ../backend && pip install -r requirements.txt email-validator"]
