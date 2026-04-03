@@ -3357,9 +3357,8 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
             'created_at': datetime.now(timezone.utc).isoformat()
         }).execute()
         
-        # Update client with user_id reference
+        # Update client updated_at timestamp
         supabase.table('clients').update({
-            'user_id': user_id,
             'updated_at': datetime.now(timezone.utc).isoformat()
         }).eq('id', client_id).execute()
         
@@ -3436,9 +3435,8 @@ async def create_client_user_manual(client_id: str, data: ClientUserCreate, user
             'created_at': datetime.now(timezone.utc).isoformat()
         }).execute()
         
-        # Update client with user_id reference and update contact_email if different
+        # Update client updated_at and contact_email if different
         update_data = {
-            'user_id': user_id,
             'updated_at': datetime.now(timezone.utc).isoformat()
         }
         if email != client_data['contact_email']:
@@ -3486,11 +3484,13 @@ async def update_client_password(client_id: str, data: ClientPasswordUpdate, use
     """Update a client's password"""
     try:
         # Get client info
-        client = supabase.table('clients').select('user_id, contact_email, contact_name').eq('id', client_id).single().execute()
+        client = supabase.table('clients').select('contact_email, contact_name').eq('id', client_id).single().execute()
         if not client.data:
             raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
         
-        user_id = client.data.get('user_id')
+        # Get user_id from profiles table
+        profile = supabase.table('profiles').select('id').eq('client_id', client_id).maybe_single().execute()
+        user_id = profile.data['id'] if profile.data else None
         if not user_id:
             raise HTTPException(status_code=400, detail="Bu müşterinin henüz bir kullanıcı hesabı yok")
         
@@ -3526,7 +3526,10 @@ async def send_client_credentials(client_id: str, user: dict = Depends(require_a
             raise HTTPException(status_code=404, detail="Müşteri bulunamadı")
         
         client_data = client.data
-        user_id = client_data.get('user_id')
+        
+        # Get user_id from profiles table
+        profile = supabase.table('profiles').select('id').eq('client_id', client_id).maybe_single().execute()
+        user_id = profile.data['id'] if profile.data else None
         
         if not user_id:
             raise HTTPException(status_code=400, detail="Bu müşterinin henüz bir kullanıcı hesabı yok")
