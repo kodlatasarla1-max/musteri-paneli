@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, status, Depends, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -3578,17 +3579,6 @@ async def send_client_credentials(client_id: str, user: dict = Depends(require_a
 # =====================================================
 app.include_router(api_router)
 
-# Health check endpoints for Kubernetes (at root level)
-@app.get("/health")
-async def root_health():
-    """Root health check for Kubernetes"""
-    return {"status": "healthy"}
-
-@app.get("/")
-async def root_endpoint():
-    """Root endpoint"""
-    return {"status": "ok", "service": "mova-dijital"}
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -3596,3 +3586,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Health check
+@app.get("/health")
+async def root_health():
+    return {"status": "healthy"}
+
+# Serve React build in production
+FRONTEND_BUILD = Path(__file__).parent.parent / "frontend" / "build"
+
+if FRONTEND_BUILD.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD / "static")), name="static")
+
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        index = FRONTEND_BUILD / "index.html"
+        if index.exists():
+            return FileResponse(str(index))
+        return {"status": "ok", "service": "mova-dijital"}
+else:
+    @app.get("/")
+    async def root_endpoint():
+        return {"status": "ok", "service": "mova-dijital"}
