@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd frontend && npm install --legacy-peer-deps && unset REACT_APP_BACKEND_URL && npm run build",
+    "build": "pip install -r backend/requirements.txt && cd frontend && npm install --legacy-peer-deps && npm run build",
     "start": "cd backend && uvicorn server:app --host 0.0.0.0 --port 8000"
   }
 }

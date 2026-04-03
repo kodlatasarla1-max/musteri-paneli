@@ -65,5 +65,5 @@ externalPort = 8000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "npm start"]
-build = ["bash", "-c", "npm run build"]
+run = ["bash", "-c", "cd backend && uvicorn server:app --host 0.0.0.0 --port 8000"]
+build = ["bash", "-c", "pip install -r backend/requirements.txt && cd frontend && npm install --legacy-peer-deps && unset REACT_APP_BACKEND_URL && npm run build"]
