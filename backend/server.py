@@ -63,6 +63,33 @@ if SUPABASE_URL and SUPABASE_SERVICE_KEY:
 oauth_state_storage = {}
 
 # =====================================================
+# HELPER: Create Supabase Auth user via direct HTTP
+# =====================================================
+async def create_supabase_auth_user(email: str, password: str, email_confirm: bool = True) -> dict:
+    """
+    Creates a user in Supabase Auth using the Admin REST API directly with httpx.
+    This bypasses any issues with the supabase-py client's admin.create_user method.
+    Returns the created user dict or raises an exception.
+    """
+    url = f"{SUPABASE_URL}/auth/v1/admin/users"
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "email": email,
+        "password": password,
+        "email_confirm": email_confirm,
+    }
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(url, json=payload, headers=headers)
+    if resp.status_code not in (200, 201):
+        detail = resp.json() if resp.content else {}
+        raise Exception(detail.get("msg") or detail.get("message") or resp.text)
+    return resp.json()
+
+# =====================================================
 # INITIALIZE MAIL TABLES (if not exist)
 # =====================================================
 def init_mail_tables():
@@ -603,17 +630,11 @@ async def login(request: LoginRequest):
 @api_router.post("/auth/register")
 async def register(request: RegisterRequest, admin_user: dict = Depends(require_admin)):
     try:
-        auth_response = supabase.auth.admin.create_user({
-            "email": request.email,
-            "password": request.password,
-            "email_confirm": True
-        })
-        
-        if not auth_response.user:
-            raise HTTPException(status_code=400, detail="Kullanıcı oluşturulamadı")
+        user_data = await create_supabase_auth_user(request.email, request.password)
+        new_user_id = user_data['id']
         
         profile_data = {
-            "id": auth_response.user.id,
+            "id": new_user_id,
             "email": request.email,
             "full_name": request.full_name,
             "role": request.role,
@@ -622,9 +643,9 @@ async def register(request: RegisterRequest, admin_user: dict = Depends(require_
         
         supabase.table('profiles').insert(profile_data).execute()
         
-        log_audit(admin_user['id'], admin_user['email'], 'create', 'user', auth_response.user.id, None, None, profile_data)
+        log_audit(admin_user['id'], admin_user['email'], 'create', 'user', new_user_id, None, None, profile_data)
         
-        return {"message": "Kullanıcı başarıyla oluşturuldu", "user_id": auth_response.user.id}
+        return {"message": "Kullanıcı başarıyla oluşturuldu", "user_id": new_user_id}
     except Exception as e:
         logging.error(f"Register error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -659,17 +680,10 @@ async def init_system():
         if existing.data and len(existing.data) > 0:
             return {"message": "Sistem zaten başlatılmış", "admin_exists": True}
         
-        auth_response = supabase.auth.admin.create_user({
-            "email": "admin@agency.com",
-            "password": "admin123",
-            "email_confirm": True
-        })
-        
-        if not auth_response.user:
-            raise HTTPException(status_code=500, detail="Admin kullanıcısı oluşturulamadı")
+        admin_user_data = await create_supabase_auth_user("admin@agency.com", "admin123")
         
         supabase.table('profiles').insert({
-            "id": auth_response.user.id,
+            "id": admin_user_data['id'],
             "email": "admin@agency.com",
             "full_name": "Admin Kullanıcı",
             "role": "admin"
@@ -1972,18 +1986,12 @@ async def get_all_staff(user: dict = Depends(require_admin)):
 async def create_staff(data: StaffCreate, user: dict = Depends(require_admin)):
     try:
         # Create auth user
-        auth_response = supabase.auth.admin.create_user({
-            "email": data.email,
-            "password": data.password,
-            "email_confirm": True
-        })
-        
-        if not auth_response.user:
-            raise HTTPException(status_code=400, detail="Kullanıcı oluşturulamadı")
+        staff_user_data = await create_supabase_auth_user(data.email, data.password)
+        new_user_id = staff_user_data['id']
         
         # Create profile
         profile_data = {
-            'id': auth_response.user.id,
+            'id': new_user_id,
             'email': data.email,
             'full_name': data.full_name,
             'role': 'staff',
@@ -1994,7 +2002,7 @@ async def create_staff(data: StaffCreate, user: dict = Depends(require_admin)):
         
         # Create default permissions
         supabase.table('staff_permissions').insert({
-            'staff_id': auth_response.user.id,
+            'staff_id': new_user_id,
             'can_manage_clients': False,
             'can_manage_content': False,
             'can_view_reports': False,
@@ -2002,9 +2010,9 @@ async def create_staff(data: StaffCreate, user: dict = Depends(require_admin)):
             'can_manage_calendar': False
         }).execute()
         
-        log_audit(user['id'], user['email'], 'create', 'staff', auth_response.user.id, after=profile_data)
+        log_audit(user['id'], user['email'], 'create', 'staff', new_user_id, after=profile_data)
         
-        return {"id": auth_response.user.id, **profile_data}
+        return {"id": new_user_id, **profile_data}
     except HTTPException:
         raise
     except Exception as e:
@@ -3332,19 +3340,12 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
         
         # Create user in Supabase Auth
         try:
-            auth_response = supabase.auth.admin.create_user({
-                "email": email,
-                "password": password,
-                "email_confirm": True
-            })
+            new_auth_user = await create_supabase_auth_user(email, password)
         except Exception as auth_error:
             logging.error(f"Supabase Auth create_user error: {auth_error}")
             raise HTTPException(status_code=500, detail=f"Kullanıcı oluşturulamadı: {str(auth_error)}")
         
-        if not auth_response.user:
-            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı - auth response boş")
-        
-        user_id = auth_response.user.id
+        user_id = new_auth_user['id']
         
         # Create profile
         supabase.table('profiles').insert({
@@ -3418,19 +3419,12 @@ async def create_client_user_manual(client_id: str, data: ClientUserCreate, user
         
         # Create user in Supabase Auth
         try:
-            auth_response = supabase.auth.admin.create_user({
-                "email": email,
-                "password": password,
-                "email_confirm": True
-            })
+            new_auth_user = await create_supabase_auth_user(email, password)
         except Exception as auth_error:
             logging.error(f"Supabase Auth create_user error: {auth_error}")
             raise HTTPException(status_code=500, detail=f"Kullanıcı oluşturulamadı: {str(auth_error)}")
         
-        if not auth_response.user:
-            raise HTTPException(status_code=500, detail="Kullanıcı oluşturulamadı - auth response boş")
-        
-        user_id = auth_response.user.id
+        user_id = new_auth_user['id']
         
         # Create profile
         supabase.table('profiles').insert({
