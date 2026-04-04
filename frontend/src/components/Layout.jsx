@@ -110,9 +110,11 @@ export const Layout = ({ role, clientId }) => {
     return staffPermissions[permission] === true;
   };
 
-  const isServiceActive = (serviceName) => {
-    const service = clientServices.find(cs => cs.service_name === serviceName);
-    return service ? service.is_active : false;
+  const isServiceActive = (keyword) => {
+    const kw = keyword.toLowerCase();
+    return clientServices.some(cs =>
+      cs.is_active && cs.service_name && cs.service_name.toLowerCase().includes(kw)
+    );
   };
 
   const adminNav = [
@@ -134,12 +136,12 @@ export const Layout = ({ role, clientId }) => {
 
   const clientNav = [
     { icon: LayoutDashboard, label: tr.sidebar.dashboard, path: '/client/dashboard', active: true },
-    { icon: Video, label: tr.sidebar.videoProduction, path: '/client/videos', active: isServiceActive('Video Çekimi & Prodüksiyon') },
-    { icon: Share2, label: tr.sidebar.socialMedia, path: '/client/social-media', active: isServiceActive('Sosyal Medya Yönetimi') },
-    { icon: BarChart3, label: tr.sidebar.metaAds, path: '/client/ads', active: isServiceActive('Meta Reklamları Yönetimi') },
-    { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('Grafik Tasarım') },
-    { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('Web Sitesi Kurulumu') },
-    { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('E-ticaret Yönetimi') },
+    { icon: Video, label: tr.sidebar.videoProduction, path: '/client/videos', active: isServiceActive('video') },
+    { icon: Share2, label: tr.sidebar.socialMedia, path: '/client/social-media', active: isServiceActive('sosyal') },
+    { icon: BarChart3, label: tr.sidebar.metaAds, path: '/client/ads', active: isServiceActive('meta') || isServiceActive('reklam') },
+    { icon: Image, label: tr.sidebar.graphicDesign, path: '/client/designs', active: isServiceActive('grafik') },
+    { icon: Globe, label: tr.sidebar.websiteSetup, path: '/client/website', active: isServiceActive('web') },
+    { icon: ShoppingBag, label: tr.sidebar.ecommerce, path: '/client/ecommerce', active: isServiceActive('ticaret') },
     { icon: Receipt, label: 'Makbuzlarım', path: '/client/receipts', active: true },
     { icon: MessageSquare, label: 'Revizyonlarım', path: '/client/revisions', active: true },
     { icon: Wallet, label: 'Muhasebe', path: '/client/finance', active: true },
