@@ -14,6 +14,11 @@ import { ClientFinance } from "./pages/client/ClientFinance";
 import { ClientProfile } from "./pages/client/ClientProfile";
 import { ClientRevisions } from "./pages/client/ClientRevisions";
 import { LockedService } from "./pages/client/LockedService";
+import { ClientSocialMedia } from "./pages/client/ClientSocialMedia";
+import { ClientAds } from "./pages/client/ClientAds";
+import { ClientWebsite } from "./pages/client/ClientWebsite";
+import { ClientEcommerce } from "./pages/client/ClientEcommerce";
+import { ServiceGuard } from "./components/ServiceGuard";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminClients } from "./pages/admin/AdminClients";
 import { AdminStaff } from "./pages/admin/AdminStaff";
@@ -72,19 +77,35 @@ function App() {
             <Route path="notifications" element={<NotificationCenter userRole="client" />} />
             <Route
               path="social-media"
-              element={<LockedService serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc} />}
+              element={
+                <ServiceGuard keyword="sosyal" serviceName={tr.services.socialMedia} description={tr.services.socialMediaDesc}>
+                  <ClientSocialMedia />
+                </ServiceGuard>
+              }
             />
             <Route
               path="ads"
-              element={<LockedService serviceName={tr.services.metaAds} description={tr.services.metaAdsDesc} />}
+              element={
+                <ServiceGuard keyword="meta" serviceName={tr.services.metaAds} description={tr.services.metaAdsDesc}>
+                  <ClientAds />
+                </ServiceGuard>
+              }
             />
             <Route
               path="website"
-              element={<LockedService serviceName={tr.services.websiteSetup} description={tr.services.websiteSetupDesc} />}
+              element={
+                <ServiceGuard keyword="web" serviceName={tr.services.websiteSetup} description={tr.services.websiteSetupDesc}>
+                  <ClientWebsite />
+                </ServiceGuard>
+              }
             />
             <Route
               path="ecommerce"
-              element={<LockedService serviceName={tr.services.ecommerce} description={tr.services.ecommerceDesc} />}
+              element={
+                <ServiceGuard keyword="ticaret" serviceName={tr.services.ecommerce} description={tr.services.ecommerceDesc}>
+                  <ClientEcommerce />
+                </ServiceGuard>
+              }
             />
           </Route>
 
