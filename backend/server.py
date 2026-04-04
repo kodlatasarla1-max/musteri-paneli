@@ -416,7 +416,7 @@ def create_notification(user_id: str, type: str, title: str, message: str, link:
         logging.error(f"Notification error: {e}")
 
 
-def notify_client_users(client_id: str, type: str, title: str, message: str, link: str = None):
+async def notify_client_users(client_id: str, type: str, title: str, message: str, link: str = None):
     """Send notification and email to all users belonging to a client"""
     try:
         # Get client info for email
@@ -428,7 +428,6 @@ def notify_client_users(client_id: str, type: str, title: str, message: str, lin
             create_notification(cu['id'], type, title, message, link)
         
         # Send email notification
-        import asyncio
         if client_info.data:
             client_data = client_info.data
             template_type = None
@@ -437,7 +436,7 @@ def notify_client_users(client_id: str, type: str, title: str, message: str, lin
                 'portal_url': FRONTEND_URL
             }
             
-            if type == 'video_uploaded' or type == 'design_uploaded':
+            if type in ('video_uploaded', 'design_uploaded'):
                 template_type = 'content_uploaded'
                 template_vars['content_type'] = 'video' if 'video' in type else 'tasarım'
                 template_vars['content_title'] = title
@@ -446,19 +445,18 @@ def notify_client_users(client_id: str, type: str, title: str, message: str, lin
                 template_vars['event_title'] = title
                 template_vars['event_date'] = message
                 template_vars['event_location'] = ''
+            elif type == 'receipt_approved':
+                template_type = 'receipt_approved'
+                template_vars['expiry_date'] = message
+            elif type == 'receipt_rejected':
+                template_type = 'receipt_rejected'
+                template_vars['admin_note'] = message
             
             if template_type:
                 template = get_mail_template(template_type)
                 if template.get('body_html'):
                     email_body = render_template(template.get('body_html', ''), template_vars)
-                    # Run async send_email in sync context
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    
-                    loop.run_until_complete(send_email(client_data.get('contact_email'), template.get('subject', title), email_body))
+                    await send_email(client_data.get('contact_email'), template.get('subject', title), email_body)
     except Exception as e:
         logging.error(f"Notify client users error: {e}")
 
@@ -836,7 +834,7 @@ async def update_client(client_id: str, client: ClientUpdate, user: dict = Depen
         log_audit(user['id'], user['email'], 'update', 'client', client_id, client_id, existing.data, update_data)
         
         # Notify client
-        notify_client_users(client_id, 'client_updated', 'Profil Güncellendi', 'Müşteri profiliniz güncellendi.', '/client/dashboard')
+        await notify_client_users(client_id, 'client_updated', 'Profil Güncellendi', 'Müşteri profiliniz güncellendi.', '/client/dashboard')
         
         return response.data[0]
     except HTTPException:
@@ -1017,7 +1015,7 @@ async def toggle_client_service(data: ServiceToggle, user: dict = Depends(requir
         log_audit(user['id'], user['email'], 'toggle_service', 'client_service', data.service_id, data.client_id, None, {'is_enabled': data.is_enabled})
         
         # Notify client
-        notify_client_users(data.client_id, 'service_toggle', 'Hizmet Güncellendi', f'{service_name} hizmeti {action}.', '/client/dashboard')
+        await notify_client_users(data.client_id, 'service_toggle', 'Hizmet Güncellendi', f'{service_name} hizmeti {action}.', '/client/dashboard')
         
         return {"message": f"Hizmet {action}: {service_name}"}
     except Exception as e:
@@ -1185,7 +1183,7 @@ async def approve_receipt(receipt_id: str, approval: ReceiptApproval, user: dict
             }).execute()
             
             # Notify client
-            notify_client_users(
+            await notify_client_users(
                 client_id,
                 'receipt_approved',
                 'Makbuz Onaylandı',
@@ -1212,7 +1210,7 @@ async def approve_receipt(receipt_id: str, approval: ReceiptApproval, user: dict
             supabase.table('clients').update({'has_pending_receipt': has_pending}).eq('id', client_id).execute()
             
             # Notify client
-            notify_client_users(
+            await notify_client_users(
                 client_id,
                 'receipt_rejected',
                 'Makbuz Reddedildi',
@@ -1647,7 +1645,7 @@ async def create_video(video: VideoCreate, user: dict = Depends(require_admin_or
         
         log_audit(user['id'], user['email'], 'create', 'video', response.data[0]['id'], video.client_id, None, video_data)
         
-        notify_client_users(video.client_id, 'video_uploaded', 'Yeni Video', f'"{video.title}" başlıklı yeni bir video yüklendi.', '/client/videos')
+        await notify_client_users(video.client_id, 'video_uploaded', 'Yeni Video', f'"{video.title}" başlıklı yeni bir video yüklendi.', '/client/videos')
         
         return response.data[0]
     except Exception as e:
@@ -1704,7 +1702,7 @@ async def create_design(design: DesignCreate, user: dict = Depends(require_admin
         
         log_audit(user['id'], user['email'], 'create', 'design', response.data[0]['id'], design.client_id, None, design_data)
         
-        notify_client_users(design.client_id, 'design_uploaded', 'Yeni Tasarım', f'"{design.title}" başlıklı yeni bir tasarım yüklendi.', '/client/designs')
+        await notify_client_users(design.client_id, 'design_uploaded', 'Yeni Tasarım', f'"{design.title}" başlıklı yeni bir tasarım yüklendi.', '/client/designs')
         
         return response.data[0]
     except Exception as e:
@@ -1776,7 +1774,7 @@ async def create_calendar_event(event: CalendarEventCreate, user: dict = Depends
         
         log_audit(user['id'], user['email'], 'create', 'calendar_event', response.data[0]['id'], event.client_id, None, event_data)
         
-        notify_client_users(event.client_id, 'event_created', 'Yeni Etkinlik', f'"{event.title}" başlıklı yeni bir etkinlik oluşturuldu.', '/client/videos')
+        await notify_client_users(event.client_id, 'event_created', 'Yeni Etkinlik', f'"{event.title}" başlıklı yeni bir etkinlik oluşturuldu.', '/client/videos')
         
         return response.data[0]
     except Exception as e:
@@ -3168,6 +3166,25 @@ def get_mail_template(template_type: str) -> dict:
                     </div>
                 </div>
                 '''
+            },
+            'receipt_rejected': {
+                'subject': 'Makbuzunuz İnceleniyor - Mova Dijital',
+                'body_html': '''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #0f172a; padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Makbuz Durumu</h2>
+                        <p style="color: #475569;">Sayın {{client_name}},</p>
+                        <p style="color: #475569;">Yüklediğiniz makbuz incelendi. Lütfen hesap yöneticinizle iletişime geçin.</p>
+                        <p style="color: #475569;"><strong>Not:</strong> {{admin_note}}</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Git</a>
+                        </div>
+                    </div>
+                </div>
+                '''
             }
         }
         return defaults.get(template_type, {'subject': '', 'body_html': ''})
@@ -3199,26 +3216,29 @@ async def send_email_smtp(to_email: str, subject: str, body_html: str, settings:
         msg['Subject'] = subject
         msg['From'] = f"{settings.get('smtp_from_name', 'Mova Dijital')} <{settings.get('smtp_from_email')}>"
         msg['To'] = to_email
-        
-        html_part = MIMEText(body_html, 'html')
+        msg['Content-Type'] = 'text/html; charset=utf-8'
+
+        html_part = MIMEText(body_html, 'html', 'utf-8')
         msg.attach(html_part)
-        
+
         smtp_host = settings.get('smtp_host')
         smtp_port = settings.get('smtp_port', 587)
         smtp_username = settings.get('smtp_username')
         smtp_password = settings.get('smtp_password')
         use_tls = settings.get('smtp_use_tls', True)
-        
+
         if use_tls:
-            server = smtplib.SMTP(smtp_host, smtp_port)
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            server.ehlo()
             server.starttls()
+            server.ehlo()
         else:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
-        
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+
         server.login(smtp_username, smtp_password)
-        server.sendmail(settings.get('smtp_from_email'), to_email, msg.as_string())
+        server.sendmail(settings.get('smtp_from_email'), to_email, msg.as_bytes())
         server.quit()
-        
+
         logging.info(f"Email sent via SMTP to {to_email}")
         return True
     except Exception as e:
@@ -3270,13 +3290,15 @@ def render_template(template_html: str, variables: dict) -> str:
 @api_router.get("/mail/settings")
 async def get_mail_settings_endpoint(user: dict = Depends(require_admin)):
     """Get current mail settings"""
-    settings = get_mail_settings()
-    if settings:
-        # Hide sensitive data
+    raw = get_mail_settings()
+    if raw:
+        settings = raw.copy()
         if settings.get('smtp_password'):
             settings['smtp_password'] = '********'
         if settings.get('resend_api_key'):
             settings['resend_api_key'] = settings['resend_api_key'][:8] + '********'
+    else:
+        settings = None
     return {"settings": settings}
 
 @api_router.post("/mail/settings")
@@ -3329,7 +3351,7 @@ async def get_mail_templates(user: dict = Depends(require_admin)):
         templates = response.data if response.data else []
         
         # Add defaults if not in database
-        default_types = ['welcome', 'receipt_approved', 'content_uploaded', 'event_created']
+        default_types = ['welcome', 'receipt_approved', 'receipt_rejected', 'content_uploaded', 'event_created']
         existing_types = [t['template_type'] for t in templates]
         
         for ttype in default_types:
@@ -3422,7 +3444,7 @@ async def create_client_user(client_id: str, user: dict = Depends(require_admin)
         
         # Send welcome email
         template = get_mail_template('welcome')
-        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        login_url = FRONTEND_URL or os.environ.get('REACT_APP_BACKEND_URL', '')
         
         email_body = render_template(template.get('body_html', ''), {
             'client_name': client_data['contact_name'],
@@ -3496,7 +3518,7 @@ async def create_client_user_manual(client_id: str, data: ClientUserCreate, user
         
         # Send welcome email
         template = get_mail_template('welcome')
-        login_url = os.environ.get('FRONTEND_URL', 'https://agency-os-prod.preview.emergentagent.com')
+        login_url = FRONTEND_URL or os.environ.get('REACT_APP_BACKEND_URL', '')
         
         email_body = render_template(template.get('body_html', ''), {
             'client_name': client_data['contact_name'],

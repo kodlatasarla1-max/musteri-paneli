@@ -39,6 +39,7 @@ const AdminMailSettings = () => {
   const templateTypes = {
     'welcome': 'Hoş Geldin E-postası',
     'receipt_approved': 'Makbuz Onaylandı',
+    'receipt_rejected': 'Makbuz Reddedildi',
     'content_uploaded': 'Yeni İçerik Yüklendi',
     'event_created': 'Yeni Etkinlik Planlandı'
   };
@@ -300,14 +301,25 @@ const AdminMailSettings = () => {
                     <Label>TLS Kullan (Önerilen)</Label>
                   </div>
 
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <h4 className="font-medium text-slate-900 mb-2">Gmail için Ayarlar</h4>
-                    <ul className="text-sm text-slate-600 space-y-1">
-                      <li>• SMTP Sunucu: smtp.gmail.com</li>
-                      <li>• Port: 587</li>
-                      <li>• Gmail "Uygulama Şifresi" oluşturmanız gerekir</li>
-                      <li>• 2 Adımlı Doğrulama aktif olmalıdır</li>
-                    </ul>
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                    <div>
+                      <h4 className="font-medium text-slate-900 mb-1">turkticaret.net için Ayarlar</h4>
+                      <ul className="text-sm text-slate-600 space-y-1">
+                        <li>• SMTP Sunucu: <code className="bg-slate-200 px-1 rounded">mail.turkticaret.net</code></li>
+                        <li>• Port: <code className="bg-slate-200 px-1 rounded">587</code></li>
+                        <li>• Kullanıcı adı: e-posta adresinizin tamamı</li>
+                        <li>• Şifre: e-posta hesabınızın şifresi</li>
+                        <li>• TLS: Açık (önerilen)</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-900 mb-1">Gmail için Ayarlar</h4>
+                      <ul className="text-sm text-slate-600 space-y-1">
+                        <li>• SMTP Sunucu: <code className="bg-slate-200 px-1 rounded">smtp.gmail.com</code> — Port: 587</li>
+                        <li>• Gmail hesabınızda "Uygulama Şifresi" oluşturmanız gerekir</li>
+                        <li>• 2 Adımlı Doğrulama aktif olmalıdır</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               ) : (
