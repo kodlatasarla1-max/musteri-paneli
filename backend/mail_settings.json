@@ -6,5 +6,7 @@
   "smtp_password": "test_password_123",
   "smtp_use_tls": true,
   "smtp_from_email": "info@movadijital.com",
-  "smtp_from_name": "Mova Dijital"
+  "smtp_from_name": "Mova Dijital",
+  "resend_api_key": "",
+  "resend_from_email": ""
 }

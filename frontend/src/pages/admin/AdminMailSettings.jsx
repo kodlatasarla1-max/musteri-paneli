@@ -303,13 +303,13 @@ const AdminMailSettings = () => {
 
                   <div className="p-4 bg-slate-50 rounded-lg space-y-3">
                     <div>
-                      <h4 className="font-medium text-slate-900 mb-1">turkticaret.net için Ayarlar</h4>
+                      <h4 className="font-medium text-slate-900 mb-1">turkticaret.net (Kurumsal E-posta) için Ayarlar</h4>
                       <ul className="text-sm text-slate-600 space-y-1">
-                        <li>• SMTP Sunucu: <code className="bg-slate-200 px-1 rounded">mail.turkticaret.net</code></li>
-                        <li>• Port: <code className="bg-slate-200 px-1 rounded">587</code></li>
-                        <li>• Kullanıcı adı: e-posta adresinizin tamamı</li>
+                        <li>• SMTP Sunucu: <code className="bg-slate-200 px-1 rounded">mail.sizin-domain.com</code> <span className="text-slate-400">(ör: mail.movadijital.com)</span></li>
+                        <li>• Port: <code className="bg-slate-200 px-1 rounded">587</code> (TLS açık) veya <code className="bg-slate-200 px-1 rounded">465</code> (TLS kapalı/SSL)</li>
+                        <li>• Kullanıcı adı: tam e-posta adresiniz (ör: info@movadijital.com)</li>
                         <li>• Şifre: e-posta hesabınızın şifresi</li>
-                        <li>• TLS: Açık (önerilen)</li>
+                        <li className="text-amber-600 font-medium">• Eğer port 587 çalışmazsa TLS'yi kapatıp port 465'i deneyin</li>
                       </ul>
                     </div>
                     <div>

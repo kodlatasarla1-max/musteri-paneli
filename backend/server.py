@@ -3211,39 +3211,57 @@ async def send_email(to_email: str, subject: str, body_html: str) -> bool:
 
 async def send_email_smtp(to_email: str, subject: str, body_html: str, settings: dict) -> bool:
     """Send email via SMTP"""
+    smtp_host = settings.get('smtp_host', '')
+    smtp_port = int(settings.get('smtp_port', 587))
+    smtp_username = settings.get('smtp_username', '')
+    smtp_password = settings.get('smtp_password', '')
+    use_tls = settings.get('smtp_use_tls', True)
+    from_email = settings.get('smtp_from_email', smtp_username)
+    from_name = settings.get('smtp_from_name', 'Mova Dijital')
+
+    if not smtp_host:
+        raise ValueError("SMTP sunucu adresi girilmemiş")
+    if not smtp_username:
+        raise ValueError("SMTP kullanıcı adı girilmemiş")
+    if not smtp_password:
+        raise ValueError("SMTP şifresi girilmemiş")
+
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = f"{settings.get('smtp_from_name', 'Mova Dijital')} <{settings.get('smtp_from_email')}>"
+        msg['From'] = f"{from_name} <{from_email}>"
         msg['To'] = to_email
-        msg['Content-Type'] = 'text/html; charset=utf-8'
 
         html_part = MIMEText(body_html, 'html', 'utf-8')
         msg.attach(html_part)
 
-        smtp_host = settings.get('smtp_host')
-        smtp_port = settings.get('smtp_port', 587)
-        smtp_username = settings.get('smtp_username')
-        smtp_password = settings.get('smtp_password')
-        use_tls = settings.get('smtp_use_tls', True)
-
         if use_tls:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=20)
             server.ehlo()
             server.starttls()
             server.ehlo()
         else:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20)
+            server.ehlo()
 
         server.login(smtp_username, smtp_password)
-        server.sendmail(settings.get('smtp_from_email'), to_email, msg.as_bytes())
+        server.sendmail(from_email, to_email, msg.as_bytes())
         server.quit()
 
         logging.info(f"Email sent via SMTP to {to_email}")
         return True
+    except smtplib.SMTPAuthenticationError:
+        raise ValueError("Kullanıcı adı veya şifre hatalı")
+    except smtplib.SMTPConnectError as e:
+        raise ValueError(f"Sunucuya bağlanılamadı ({smtp_host}:{smtp_port}): {e}")
+    except smtplib.SMTPServerDisconnected as e:
+        raise ValueError(f"Sunucu bağlantıyı kesti — port veya TLS ayarını kontrol edin ({smtp_host}:{smtp_port})")
+    except TimeoutError:
+        raise ValueError(f"Bağlantı zaman aşımına uğradı — sunucu adresi veya portu kontrol edin ({smtp_host}:{smtp_port})")
+    except OSError as e:
+        raise ValueError(f"Ağ hatası: {e}")
     except Exception as e:
-        logging.error(f"SMTP send error: {e}")
-        return False
+        raise ValueError(f"SMTP hatası: {e}")
 
 async def send_email_resend(to_email: str, subject: str, body_html: str, settings: dict) -> bool:
     """Send email via Resend API"""
@@ -3320,10 +3338,11 @@ async def update_mail_settings_endpoint(data: MailSettingsUpdate, user: dict = D
 @api_router.post("/mail/test")
 async def send_test_email_endpoint(data: SendTestEmail, user: dict = Depends(require_admin)):
     """Send a test email"""
-    success = await send_email(
-        data.to_email,
-        "Mova Dijital - Test E-postası",
-        """
+    settings = get_mail_settings()
+    if not settings:
+        raise HTTPException(status_code=400, detail="Mail ayarları henüz kaydedilmemiş.")
+
+    body_html = """
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #0f172a; padding: 30px; text-align: center;">
                 <h1 style="color: white; margin: 0;">Mova Dijital</h1>
@@ -3333,11 +3352,20 @@ async def send_test_email_endpoint(data: SendTestEmail, user: dict = Depends(req
                 <p style="color: #475569;">Mail ayarlarınız doğru yapılandırılmış. E-posta gönderimi çalışıyor.</p>
             </div>
         </div>
-        """
-    )
-    if success:
+    """
+
+    try:
+        provider = settings.get('provider', 'smtp')
+        if provider == 'resend':
+            await send_email_resend(data.to_email, "Mova Dijital - Test E-postası", body_html, settings)
+        else:
+            await send_email_smtp(data.to_email, "Mova Dijital - Test E-postası", body_html, settings)
         return {"message": "Test e-postası gönderildi", "success": True}
-    raise HTTPException(status_code=500, detail="E-posta gönderilemedi. Ayarları kontrol edin.")
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logging.error(f"Test email error: {e}")
+        raise HTTPException(status_code=500, detail=f"Beklenmeyen hata: {e}")
 
 
 # =====================================================
