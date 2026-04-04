@@ -3108,109 +3108,118 @@ def save_mail_settings(settings: dict):
         return MAIL_SETTINGS_FILE.exists()
 
 def get_mail_template(template_type: str) -> dict:
-    """Get mail template from database"""
+    """Get mail template from database, then file, then hardcoded defaults"""
+    defaults = {
+        'welcome': {
+            'subject': 'Mova Dijital Portalına Hoş Geldiniz',
+            'body_html': '''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #0f172a; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                    <h2 style="color: #0f172a;">Hoş Geldiniz, {{client_name}}!</h2>
+                    <p style="color: #475569;">Mova Dijital müşteri portalına kaydınız başarıyla oluşturulmuştur.</p>
+                    <p style="color: #475569;"><strong>Giriş Bilgileriniz:</strong></p>
+                    <p style="color: #475569;">E-posta: {{email}}</p>
+                    <p style="color: #475569;">Şifre: {{password}}</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{login_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Giriş Yap</a>
+                    </div>
+                    <p style="color: #94a3b8; font-size: 12px;">Güvenliğiniz için ilk girişinizde şifrenizi değiştirmenizi öneririz.</p>
+                </div>
+            </div>
+            '''
+        },
+        'receipt_approved': {
+            'subject': 'Makbuzunuz Onaylandı - Mova Dijital',
+            'body_html': '''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #0f172a; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                    <h2 style="color: #0f172a;">Makbuzunuz Onaylandı!</h2>
+                    <p style="color: #475569;">Sayın {{client_name}},</p>
+                    <p style="color: #475569;">Yüklediğiniz makbuz onaylanmıştır. Portal erişiminiz 30 gün boyunca aktif olacaktır.</p>
+                    <p style="color: #475569;"><strong>Erişim Bitiş Tarihi:</strong> {{expiry_date}}</p>
+                </div>
+            </div>
+            '''
+        },
+        'content_uploaded': {
+            'subject': 'Yeni İçerik Yüklendi - Mova Dijital',
+            'body_html': '''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #0f172a; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                    <h2 style="color: #0f172a;">Yeni İçerik Eklendi!</h2>
+                    <p style="color: #475569;">Sayın {{client_name}},</p>
+                    <p style="color: #475569;">Hesabınıza yeni bir {{content_type}} yüklenmiştir: <strong>{{content_title}}</strong></p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">İçeriği Görüntüle</a>
+                    </div>
+                </div>
+            </div>
+            '''
+        },
+        'event_created': {
+            'subject': 'Yeni Etkinlik Planlandı - Mova Dijital',
+            'body_html': '''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #0f172a; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                    <h2 style="color: #0f172a;">Yeni Etkinlik!</h2>
+                    <p style="color: #475569;">Sayın {{client_name}},</p>
+                    <p style="color: #475569;">Sizin için yeni bir etkinlik planlanmıştır:</p>
+                    <p style="color: #475569;"><strong>{{event_title}}</strong></p>
+                    <p style="color: #475569;">Tarih: {{event_date}}</p>
+                    <p style="color: #475569;">Konum: {{event_location}}</p>
+                </div>
+            </div>
+            '''
+        },
+        'receipt_rejected': {
+            'subject': 'Makbuzunuz İnceleniyor - Mova Dijital',
+            'body_html': '''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #0f172a; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Mova Dijital</h1>
+                </div>
+                <div style="padding: 30px; background: #f8fafc;">
+                    <h2 style="color: #0f172a;">Makbuz Durumu</h2>
+                    <p style="color: #475569;">Sayın {{client_name}},</p>
+                    <p style="color: #475569;">Yüklediğiniz makbuz incelendi. Lütfen hesap yöneticinizle iletişime geçin.</p>
+                    <p style="color: #475569;"><strong>Not:</strong> {{admin_note}}</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Git</a>
+                    </div>
+                </div>
+            </div>
+            '''
+        }
+    }
+    # 1. Try DB
     try:
         response = supabase.table('mail_templates').select('*').eq('template_type', template_type).single().execute()
-        if response.data:
+        if response.data and response.data.get('body_html'):
             return response.data
-        # Return default templates
-        defaults = {
-            'welcome': {
-                'subject': 'Mova Dijital Portalına Hoş Geldiniz',
-                'body_html': '''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #0f172a; padding: 30px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f8fafc;">
-                        <h2 style="color: #0f172a;">Hoş Geldiniz, {{client_name}}!</h2>
-                        <p style="color: #475569;">Mova Dijital müşteri portalına kaydınız başarıyla oluşturulmuştur.</p>
-                        <p style="color: #475569;"><strong>Giriş Bilgileriniz:</strong></p>
-                        <p style="color: #475569;">E-posta: {{email}}</p>
-                        <p style="color: #475569;">Şifre: {{password}}</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="{{login_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Giriş Yap</a>
-                        </div>
-                        <p style="color: #94a3b8; font-size: 12px;">Güvenliğiniz için ilk girişinizde şifrenizi değiştirmenizi öneririz.</p>
-                    </div>
-                </div>
-                '''
-            },
-            'receipt_approved': {
-                'subject': 'Makbuzunuz Onaylandı - Mova Dijital',
-                'body_html': '''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #0f172a; padding: 30px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f8fafc;">
-                        <h2 style="color: #0f172a;">Makbuzunuz Onaylandı!</h2>
-                        <p style="color: #475569;">Sayın {{client_name}},</p>
-                        <p style="color: #475569;">Yüklediğiniz makbuz onaylanmıştır. Portal erişiminiz 30 gün boyunca aktif olacaktır.</p>
-                        <p style="color: #475569;"><strong>Erişim Bitiş Tarihi:</strong> {{expiry_date}}</p>
-                    </div>
-                </div>
-                '''
-            },
-            'content_uploaded': {
-                'subject': 'Yeni İçerik Yüklendi - Mova Dijital',
-                'body_html': '''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #0f172a; padding: 30px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f8fafc;">
-                        <h2 style="color: #0f172a;">Yeni İçerik Eklendi!</h2>
-                        <p style="color: #475569;">Sayın {{client_name}},</p>
-                        <p style="color: #475569;">Hesabınıza yeni bir {{content_type}} yüklenmiştir: <strong>{{content_title}}</strong></p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">İçeriği Görüntüle</a>
-                        </div>
-                    </div>
-                </div>
-                '''
-            },
-            'event_created': {
-                'subject': 'Yeni Etkinlik Planlandı - Mova Dijital',
-                'body_html': '''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #0f172a; padding: 30px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f8fafc;">
-                        <h2 style="color: #0f172a;">Yeni Etkinlik!</h2>
-                        <p style="color: #475569;">Sayın {{client_name}},</p>
-                        <p style="color: #475569;">Sizin için yeni bir etkinlik planlanmıştır:</p>
-                        <p style="color: #475569;"><strong>{{event_title}}</strong></p>
-                        <p style="color: #475569;">Tarih: {{event_date}}</p>
-                        <p style="color: #475569;">Konum: {{event_location}}</p>
-                    </div>
-                </div>
-                '''
-            },
-            'receipt_rejected': {
-                'subject': 'Makbuzunuz İnceleniyor - Mova Dijital',
-                'body_html': '''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #0f172a; padding: 30px; text-align: center;">
-                        <h1 style="color: white; margin: 0;">Mova Dijital</h1>
-                    </div>
-                    <div style="padding: 30px; background: #f8fafc;">
-                        <h2 style="color: #0f172a;">Makbuz Durumu</h2>
-                        <p style="color: #475569;">Sayın {{client_name}},</p>
-                        <p style="color: #475569;">Yüklediğiniz makbuz incelendi. Lütfen hesap yöneticinizle iletişime geçin.</p>
-                        <p style="color: #475569;"><strong>Not:</strong> {{admin_note}}</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="{{portal_url}}" style="background: #0f172a; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Portala Git</a>
-                        </div>
-                    </div>
-                </div>
-                '''
-            }
-        }
-        return defaults.get(template_type, {'subject': '', 'body_html': ''})
-    except Exception:
-        return {'subject': '', 'body_html': ''}
+    except Exception as e:
+        logging.warning(f"DB get_mail_template failed: {e}")
+    # 2. Try file
+    try:
+        file_templates = get_templates_from_file()
+        for t in file_templates:
+            if t.get('template_type') == template_type and t.get('body_html'):
+                return t
+    except Exception as e:
+        logging.warning(f"File get_mail_template failed: {e}")
+    # 3. Return hardcoded default
+    return defaults.get(template_type, {'subject': '', 'body_html': ''})
 
 async def send_email(to_email: str, subject: str, body_html: str) -> bool:
     """Send email using configured provider (SMTP or Resend)"""
