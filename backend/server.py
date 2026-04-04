@@ -3023,6 +3023,27 @@ async def refresh_meta_token(client_id: str, user: dict = Depends(require_admin_
 # MAIL SYSTEM - HELPERS
 # =====================================================
 MAIL_SETTINGS_FILE = Path(__file__).parent / 'mail_settings.json'
+MAIL_TEMPLATES_FILE = Path(__file__).parent / 'mail_templates.json'
+
+def get_templates_from_file() -> list:
+    import json
+    try:
+        if MAIL_TEMPLATES_FILE.exists():
+            with open(MAIL_TEMPLATES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logging.error(f"Read templates file error: {e}")
+    return []
+
+def save_templates_to_file(templates: list) -> bool:
+    import json
+    try:
+        with open(MAIL_TEMPLATES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(templates, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        logging.error(f"Save templates file error: {e}")
+        return False
 
 def get_mail_settings():
     """Get mail settings from database or file fallback"""
@@ -3374,34 +3395,42 @@ async def send_test_email_endpoint(data: SendTestEmail, user: dict = Depends(req
 @api_router.get("/mail/templates")
 async def get_mail_templates(user: dict = Depends(require_admin)):
     """Get all mail templates"""
+    default_types = ['welcome', 'receipt_approved', 'receipt_rejected', 'content_uploaded', 'event_created']
+    templates = []
+
+    # Try database first
     try:
         response = supabase.table('mail_templates').select('*').execute()
-        templates = response.data if response.data else []
-        
-        # Add defaults if not in database
-        default_types = ['welcome', 'receipt_approved', 'receipt_rejected', 'content_uploaded', 'event_created']
-        existing_types = [t['template_type'] for t in templates]
-        
-        for ttype in default_types:
-            if ttype not in existing_types:
-                default_template = get_mail_template(ttype)
-                templates.append({
-                    'template_type': ttype,
-                    'subject': default_template.get('subject', ''),
-                    'body_html': default_template.get('body_html', '')
-                })
-        
-        return {"templates": templates}
+        if response.data:
+            templates = response.data
     except Exception as e:
         logging.error(f"Get templates error: {e}")
-        return {"templates": []}
+
+    # If DB empty, try file
+    if not templates:
+        templates = get_templates_from_file()
+
+    # Add defaults for missing types
+    existing_types = [t['template_type'] for t in templates]
+    for ttype in default_types:
+        if ttype not in existing_types:
+            default_template = get_mail_template(ttype)
+            templates.append({
+                'template_type': ttype,
+                'subject': default_template.get('subject', ''),
+                'body_html': default_template.get('body_html', '')
+            })
+
+    return {"templates": templates}
 
 @api_router.post("/mail/templates")
 async def save_mail_template(data: MailTemplateUpdate, user: dict = Depends(require_admin)):
     """Save or update a mail template"""
+    db_saved = False
+
+    # Try database first
     try:
         existing = supabase.table('mail_templates').select('id').eq('template_type', data.template_type).execute()
-        
         if existing.data:
             supabase.table('mail_templates').update({
                 'subject': data.subject,
@@ -3415,11 +3444,31 @@ async def save_mail_template(data: MailTemplateUpdate, user: dict = Depends(requ
                 'body_html': data.body_html,
                 'created_at': datetime.now(timezone.utc).isoformat()
             }).execute()
-        
-        return {"message": "Şablon kaydedildi", "success": True}
+        db_saved = True
+        logging.info(f"Template '{data.template_type}' saved to database")
     except Exception as e:
-        logging.error(f"Save template error: {e}")
-        raise HTTPException(status_code=500, detail="Şablon kaydedilemedi")
+        logging.error(f"Save template DB error: {e}")
+
+    # Always save to file as fallback/backup
+    templates = get_templates_from_file()
+    found = False
+    for t in templates:
+        if t['template_type'] == data.template_type:
+            t['subject'] = data.subject
+            t['body_html'] = data.body_html
+            found = True
+            break
+    if not found:
+        templates.append({
+            'template_type': data.template_type,
+            'subject': data.subject,
+            'body_html': data.body_html
+        })
+    file_saved = save_templates_to_file(templates)
+
+    if db_saved or file_saved:
+        return {"message": "Şablon kaydedildi", "success": True}
+    raise HTTPException(status_code=500, detail="Şablon kaydedilemedi")
 
 
 # =====================================================

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -10,7 +12,7 @@ import { Switch } from '../../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
-import { Mail, Settings, FileText, Send, CheckCircle, AlertCircle, Eye, Save, TestTube, ExternalLink, XCircle, Info } from 'lucide-react';
+import { Mail, Settings, FileText, Send, CheckCircle, AlertCircle, Eye, Save, TestTube, ExternalLink, XCircle, Info, Code, Pencil } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -35,6 +37,26 @@ const AdminMailSettings = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [testEmail, setTestEmail] = useState('');
   const [showTestDialog, setShowTestDialog] = useState(false);
+  const [editorMode, setEditorMode] = useState('wysiwyg');
+
+  const quillModules = useMemo(() => ({
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['blockquote', 'code-block'],
+      ['clean']
+    ]
+  }), []);
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline',
+    'color', 'background', 'align',
+    'link', 'list', 'bullet', 'blockquote', 'code-block'
+  ];
 
   const templateTypes = {
     'welcome': 'Hoş Geldin E-postası',
@@ -490,20 +512,72 @@ const AdminMailSettings = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>E-posta İçeriği (HTML)</Label>
-                    <Textarea
-                      value={selectedTemplate.body_html}
-                      onChange={(e) => setSelectedTemplate({ ...selectedTemplate, body_html: e.target.value })}
-                      className="border-slate-300 min-h-[300px] font-mono text-sm"
-                      data-testid="template-body-input"
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label>E-posta İçeriği</Label>
+                      <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-1">
+                        <button
+                          onClick={() => setEditorMode('wysiwyg')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                            editorMode === 'wysiwyg' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Görsel Düzenle
+                        </button>
+                        <button
+                          onClick={() => setEditorMode('html')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                            editorMode === 'html' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <Code className="h-3 w-3" />
+                          HTML Kodu
+                        </button>
+                      </div>
+                    </div>
+
+                    {editorMode === 'wysiwyg' ? (
+                      <div className="border border-slate-300 rounded-lg overflow-hidden" style={{ minHeight: '320px' }}>
+                        <ReactQuill
+                          theme="snow"
+                          value={selectedTemplate.body_html}
+                          onChange={(content) => setSelectedTemplate({ ...selectedTemplate, body_html: content })}
+                          modules={quillModules}
+                          formats={quillFormats}
+                          style={{ height: '280px' }}
+                        />
+                      </div>
+                    ) : (
+                      <Textarea
+                        value={selectedTemplate.body_html}
+                        onChange={(e) => setSelectedTemplate({ ...selectedTemplate, body_html: e.target.value })}
+                        className="border-slate-300 min-h-[320px] font-mono text-xs"
+                        placeholder="<div>HTML içeriğinizi buraya yazın...</div>"
+                        data-testid="template-body-input"
+                      />
+                    )}
                   </div>
 
                   <div className="p-4 bg-slate-50 rounded-lg">
                     <h4 className="font-medium text-slate-900 mb-2">Kullanılabilir Değişkenler</h4>
+                    <p className="text-xs text-slate-500 mb-2">Tıklayarak kopyalayın veya HTML modunda yapıştırın</p>
                     <div className="flex flex-wrap gap-2">
-                      {['{{client_name}}', '{{email}}', '{{password}}', '{{login_url}}', '{{expiry_date}}', '{{content_type}}', '{{content_title}}', '{{event_title}}', '{{event_date}}', '{{event_location}}'].map(v => (
-                        <code key={v} className="px-2 py-1 bg-slate-200 rounded text-xs">{v}</code>
+                      {[
+                        '{{client_name}}', '{{email}}', '{{password}}', '{{login_url}}',
+                        '{{expiry_date}}', '{{content_type}}', '{{content_title}}',
+                        '{{event_title}}', '{{event_date}}', '{{event_location}}',
+                        '{{admin_note}}', '{{portal_url}}'
+                      ].map(v => (
+                        <code
+                          key={v}
+                          className="px-2 py-1 bg-slate-200 hover:bg-slate-300 rounded text-xs cursor-pointer transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(v);
+                            toast.success(`${v} kopyalandı`);
+                          }}
+                        >
+                          {v}
+                        </code>
                       ))}
                     </div>
                   </div>
