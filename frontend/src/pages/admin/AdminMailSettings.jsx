@@ -10,7 +10,7 @@ import { Switch } from '../../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
-import { Mail, Settings, FileText, Send, CheckCircle, AlertCircle, Eye, Save, TestTube } from 'lucide-react';
+import { Mail, Settings, FileText, Send, CheckCircle, AlertCircle, Eye, Save, TestTube, ExternalLink, XCircle, Info } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -211,14 +211,25 @@ const AdminMailSettings = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="smtp">SMTP (Gmail, Yandex, vb.)</SelectItem>
-                    <SelectItem value="resend">Resend API</SelectItem>
+                    <SelectItem value="resend">✅ Resend API (Önerilen)</SelectItem>
+                    <SelectItem value="smtp">⚠️ SMTP (Kısıtlı)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {settings.provider === 'smtp' ? (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-red-700 text-sm">SMTP Bu Ortamda Çalışmıyor</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        Sunucu, doğrudan SMTP bağlantılarını engelliyor. movadijital.com, smtp.turkticaret.net 
+                        gibi tüm SMTP portları (25, 465, 587) erişilemiyor.
+                        Lütfen <button onClick={() => setSettings({...settings, provider: 'resend'})} className="font-semibold underline cursor-pointer">Resend API</button>'ye geçin.
+                      </p>
+                    </div>
+                  </div>
                   <h3 className="font-medium text-slate-900">SMTP Ayarları</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -324,6 +335,16 @@ const AdminMailSettings = () => {
                 </div>
               ) : (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div className="flex gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-green-700 text-sm">Resend Bu Ortamda Çalışıyor</p>
+                      <p className="text-green-600 text-sm mt-1">
+                        Resend, e-postayı SMTP yerine güvenli HTTPS üzerinden gönderiyor. Ücretsiz planda ayda 3.000 e-posta hakkı var.
+                      </p>
+                    </div>
+                  </div>
+
                   <h3 className="font-medium text-slate-900">Resend API Ayarları</h3>
                   
                   <div className="space-y-2">
@@ -343,20 +364,49 @@ const AdminMailSettings = () => {
                     <Input
                       value={settings.resend_from_email}
                       onChange={(e) => setSettings({ ...settings, resend_from_email: e.target.value })}
-                      placeholder="noreply@yourdomain.com"
+                      placeholder="noreply@movadijital.com"
                       className="border-slate-300"
                       data-testid="resend-from-email-input"
                     />
-                    <p className="text-xs text-slate-500">Resend'de doğrulanmış domain'inizden bir adres kullanın</p>
+                    <p className="text-xs text-slate-500">Resend'de doğrulanmış domain'inizden bir adres olmalı</p>
                   </div>
 
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <h4 className="font-medium text-slate-900 mb-2">Resend Kurulumu</h4>
-                    <ul className="text-sm text-slate-600 space-y-1">
-                      <li>• <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-slate-900 underline">resend.com</a> adresinden hesap oluşturun</li>
-                      <li>• Domain'inizi doğrulayın</li>
-                      <li>• API anahtarı oluşturun</li>
-                    </ul>
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                    <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Resend Kurulum Adımları
+                    </h4>
+                    <ol className="text-sm text-slate-600 space-y-2 list-none">
+                      <li className="flex gap-2">
+                        <span className="bg-slate-900 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
+                        <span>
+                          <a href="https://resend.com/signup" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">resend.com/signup</a> adresine gidin ve ücretsiz hesap oluşturun
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-slate-900 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
+                        <span>
+                          Sol menüden <strong>Domains</strong> → <strong>Add Domain</strong> ile <code className="bg-slate-200 px-1 rounded">movadijital.com</code> ekleyin ve DNS kayıtlarını doğrulayın
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-slate-900 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
+                        <span>
+                          Sol menüden <strong>API Keys</strong> → <strong>Create API Key</strong> ile anahtar oluşturun
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-slate-900 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">4</span>
+                        <span>
+                          API anahtarını yukarıdaki alana yapıştırın. Gönderen e-postayı <code className="bg-slate-200 px-1 rounded">info@movadijital.com</code> yapın
+                        </span>
+                      </li>
+                    </ol>
+                    <div className="pt-2 border-t border-slate-200">
+                      <p className="text-xs text-slate-500">
+                        💡 Domain doğrulaması için DNS yönetim panelinize (turkticaret.net cPanel) gidip Resend'in verdiği TXT kayıtlarını eklemeniz gerekiyor.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
