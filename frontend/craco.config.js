@@ -105,6 +105,13 @@ webpackConfig.devServer = (devServerConfig) => {
   devServerConfig.port = 5000;
   devServerConfig.allowedHosts = "all";
 
+  // Disable caching so browsers always get fresh JS bundles
+  devServerConfig.headers = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  };
+
   return devServerConfig;
 };
 
