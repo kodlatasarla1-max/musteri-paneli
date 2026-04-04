@@ -1,5 +1,5 @@
 {
-  "provider": "smtp",
+  "provider": "resend",
   "smtp_host": "smtp.turkticaret.net",
   "smtp_port": 587,
   "smtp_username": "mail.movadijital.com",
@@ -7,6 +7,6 @@
   "smtp_use_tls": true,
   "smtp_from_email": "info@movadijital.com",
   "smtp_from_name": "Mova Dijital",
-  "resend_api_key": "",
-  "resend_from_email": ""
+  "resend_api_key": "re_PPbti3rW_K1q3eFg3HTSC52VpzkUnFUCh",
+  "resend_from_email": "bilgi@movadijital.com"
 }
