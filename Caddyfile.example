@@ -1,0 +1,25 @@
+# Caddy configuration for musteri-paneli deployment
+# Location on VPS: /etc/caddy/Caddyfile
+# After modifying, reload with: systemctl reload caddy
+
+ayotel.com.tr {
+    reverse_proxy localhost:3000
+}
+
+ayotel.online {
+    redir https://ayotel.com.tr{uri} permanent
+}
+
+movadijital.info {
+    root * /var/www/musteri-paneli/frontend/build
+    encode gzip
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8001
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}
